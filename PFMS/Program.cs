@@ -7,11 +7,22 @@ using System.Net;
 using System.Net.Sockets;
 using System.Net.NetworkInformation;
 using System.Threading;
+using System.IO;
 
 namespace PFMS
 {
     class Program
     {
+        const string version = "2018.0.0";
+        static string[] defaultOptions = new string[] {
+            "AutonomousTime:15",
+            "TeleoperatedTime:135",
+            "CountdownTime:3",
+            "PauseTime:3"
+        };
+
+        static Dictionary<string, int> options = new Dictionary<string, int>();
+
         static DriverStation red1;
         static DriverStation red2;
         static DriverStation red3;
@@ -19,11 +30,46 @@ namespace PFMS
         static DriverStation blue2;
         static DriverStation blue3;
 
+        static string configPath = "config.txt";
+
         static void Main(string[] args)
         {
+            //Welcome Message
             Console.Clear();
-            Console.WriteLine("Welcome to this unoffical practice FMS.");
-            Console.WriteLine("Please be safe. Be prepared to kill things at any time.");
+            Console.WriteLine("Welcome to the unoffical practice FMS Version {0}", version);
+            Console.WriteLine("Written by MoSadie.");
+            Console.WriteLine("Robots are dangerous. Please be safe.");
+
+            //Config Setup
+            if (!File.Exists(configPath))
+            {
+                using (StreamWriter stream = File.CreateText(configPath))
+                {
+                    foreach (string defaultOption in defaultOptions)
+                    {
+                        stream.WriteLine(defaultOption);
+                    }
+                }
+            }
+
+            //Config Message
+            Console.WriteLine();
+            Console.WriteLine("Configuration can be changed using the config.txt file in the same directory as this executable.");
+            Console.WriteLine("Current Configuration:");
+
+            using (StreamReader stream = File.OpenText(configPath))
+            {
+                string line;
+                while ((line = stream.ReadLine()) != null)
+                {
+                    string key = line.Split(':')[0];
+                    int number = int.Parse(line.Split(':')[1]);
+                    options.Add(key, number);
+                    Console.WriteLine("{0}: {1} seconds", key, number);
+                }
+            }
+
+            // Team Selection
             Console.WriteLine();
             Console.WriteLine();
             Console.Write("Enter a team number for the Red 1 driver station: ");
@@ -44,7 +90,7 @@ namespace PFMS
             Console.Write("Enter a team number for the Blue 3 driver station: ");
             blue3 = new DriverStation(Console.ReadLine());
 
-
+            //TODO THIS CHECK CHEESY ARENA
             TcpListener listener = new TcpListener(IPAddress.Any, 80);
 
             listener.Start();
