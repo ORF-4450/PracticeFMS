@@ -192,12 +192,18 @@ namespace PFMS
             }
             radioIp = IPAddress.Parse(robotIp.ToString().Substring(0, robotIp.ToString().Length - 1) + "1");
             Console.WriteLine("DriverStation created with robot IP of {0} and radio IP of {1}", robotIp.ToString(), radioIp.ToString());
+
             pingThreadRef = new ThreadStart(robotPingThread);
             pingThread = new Thread(pingThreadRef);
             pingThread.Start();
+
+            recieveDataThreadRef = new ThreadStart(recieveStatusThread);
+            recieveDataThread = new Thread(recieveDataThreadRef);
+            recieveDataThread.Start();
         }
 
         int TeamNumber;
+        bool closed = false;
         IPAddress robotIp;
         IPAddress radioIp;
         IPAddress driverStationIp;
@@ -239,6 +245,15 @@ namespace PFMS
                     result = ping.Send(driverStationIp, timeout);
                     isDSConnected = result.Status == IPStatus.Success;
                 }
+            }
+        }
+
+        public void recieveStatusThread()
+        {
+            byte[] buffer = new byte[4096];
+            while (!closed)
+            {
+
             }
         }
     }
