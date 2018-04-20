@@ -11,17 +11,20 @@ using System.IO;
 
 namespace PFMS
 {
-    class Program
+    class MainClass
     {
         const string version = "2018.0.0";
         static string[] defaultOptions = new string[] {
             "AutonomousTime:15",
             "TeleoperatedTime:135",
             "CountdownTime:3",
-            "PauseTime:3"
+            "PauseTime:3",
+            "GameStringOverride:-1"
         };
 
         static Dictionary<string, int> options = new Dictionary<string, int>();
+
+        static IPAddress FMSIp = IPAddress.Parse("10.00.100.5");
 
         static DriverStation red1;
         static DriverStation red2;
@@ -30,7 +33,26 @@ namespace PFMS
         static DriverStation blue2;
         static DriverStation blue3;
 
+        static string redGameString;
+        static string blueGameString;
+
         static string configPath = "config.txt";
+
+        static void generateGameString()
+        {
+            Dictionary<int, string[]> gameStrings = new Dictionary<int, string[]>();
+            gameStrings.Add(0, new string[2] { "RLR", "RLR" });
+            gameStrings.Add(1, new string[2] { "LRL", "LRL" });
+            gameStrings.Add(0, new string[2] { "RRR", "LLL" });
+            gameStrings.Add(0, new string[2] { "LLL", "RRR" });
+
+            int selection = new Random().Next(0, 5);
+            if (options["GameStringOverride"] == -1 && options["GameStringOverride"] <= 4 && options["GameStringOverride"] >= 0) selection = options["GameStringOverride"];
+
+            redGameString = gameStrings[selection][0];
+            redGameString = gameStrings[selection][1];
+
+        }
 
         static void Main(string[] args)
         {
@@ -65,7 +87,7 @@ namespace PFMS
                     string key = line.Split(':')[0];
                     int number = int.Parse(line.Split(':')[1]);
                     options.Add(key, number);
-                    Console.WriteLine("{0}: {1} seconds", key, number);
+                    Console.WriteLine("{0}: {1}", key, number);
                 }
             }
 
@@ -73,25 +95,31 @@ namespace PFMS
             Console.WriteLine();
             Console.WriteLine();
             Console.Write("Enter a team number for the Red 1 driver station: ");
-            red1 = new DriverStation(Console.ReadLine());
+            red1 = new DriverStation(Console.ReadLine(), AllianceStation.RED1);
             Console.WriteLine();
             Console.Write("Enter a team number for the Red 2 driver station: ");
-            red2 = new DriverStation(Console.ReadLine());
+            red2 = new DriverStation(Console.ReadLine(), AllianceStation.RED2);
             Console.WriteLine();
             Console.Write("Enter a team number for the Red 3 driver station: ");
-            red3 = new DriverStation(Console.ReadLine());
+            red3 = new DriverStation(Console.ReadLine(), AllianceStation.RED3);
             Console.WriteLine();
             Console.Write("Enter a team number for the Blue 1 driver station: ");
-            blue1 = new DriverStation(Console.ReadLine());
+            blue1 = new DriverStation(Console.ReadLine(), AllianceStation.BLUE1);
             Console.WriteLine();
             Console.Write("Enter a team number for the Blue 2 driver station: ");
-            blue2 = new DriverStation(Console.ReadLine());
+            blue2 = new DriverStation(Console.ReadLine(), AllianceStation.BLUE2);
             Console.WriteLine();
             Console.Write("Enter a team number for the Blue 3 driver station: ");
-            blue3 = new DriverStation(Console.ReadLine());
+            blue3 = new DriverStation(Console.ReadLine(), AllianceStation.BLUE3);
+
+            //2018 Specific Game String Generation
+            Console.WriteLine();
+            generateGameString();
+            Console.WriteLine("Game String for Red: " + redGameString);
+            Console.WriteLine("Game String for Blue: " + blueGameString);
 
             //TODO THIS CHECK CHEESY ARENA
-            TcpListener listener = new TcpListener(IPAddress.Any, 80);
+            TcpListener dsConnectListener = new TcpListener(FMSIp, 1750);
 
             listener.Start();
 
@@ -135,7 +163,7 @@ namespace PFMS
 
     class DriverStation
     {
-        public DriverStation(string teamNumber)
+        public DriverStation(string teamNumber, AllianceStation allianceStation)
         {
             if (int.TryParse(teamNumber, out TeamNumber))
             {
@@ -170,37 +198,50 @@ namespace PFMS
         }
 
         int TeamNumber;
-        ThreadStart pingThreadRef;
-        Thread pingThread;
         IPAddress robotIp;
         IPAddress radioIp;
         IPAddress driverStationIp;
         bool isDSConnected = false;
         bool isRobotRadioConnected = false;
         bool isRoboRioConnected = false;
+        AllianceStation allianceStation;
+
+        ThreadStart pingThreadRef;
+        Thread pingThread;
+
+        ThreadStart recieveDataThreadRef;
+        Thread recieveDataThread;
+
+        ThreadStart sendDataThreadRef;
+        Thread sendDataThread;
+
+        UdpClient udpClient;
+        TcpClient tcpClient;
+
+        public bool isRedAlliance() { return (allianceStation == AllianceStation.RED1 || allianceStation == AllianceStation.RED2 || allianceStation == AllianceStation.RED3); }
 
         public void robotPingThread()
         {
             Ping ping = new Ping();
             int timeout = 5;
-            string data = "Hey thing! I want to know if you're alive!";
-            byte[] buffer = Encoding.ASCII.GetBytes(data);
             while (true)
             {
                 //Ping Robot Radio
-                PingReply result = ping.Send(radioIp, timeout, buffer);
+                PingReply result = ping.Send(radioIp, timeout);
                 isRobotRadioConnected = result.Status == IPStatus.Success;
 
                 //Ping Robot
-                result = ping.Send(robotIp, timeout, buffer);
+                result = ping.Send(robotIp, timeout);
                 isRoboRioConnected = result.Status == IPStatus.Success;
 
                 if (driverStationIp != null)
                 {
-                    result = ping.Send(driverStationIp, timeout, buffer);
+                    result = ping.Send(driverStationIp, timeout);
                     isDSConnected = result.Status == IPStatus.Success;
                 }
             }
         }
     }
+
+    enum AllianceStation { RED1, RED2, RED3, BLUE1, BLUE2, BLUE3 }
 }
