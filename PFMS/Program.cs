@@ -11,7 +11,7 @@ using System.IO;
 
 namespace PFMS
 {
-    class MainClass
+    class Arena
     {
         const string version = "2018.0.0";
         static string[] defaultOptions = new string[] {
@@ -33,11 +33,15 @@ namespace PFMS
         static DriverStation blue2;
         static DriverStation blue3;
 
-        static enum GamePhase { PREMATCH, AUTO, PAUSE, TELEOP, POSTMATCH };
-        static GamePhase currentGamePhase = GamePhase.PREMATCH;
+        public static bool estop = false;
 
-        static string redGameString;
-        static string blueGameString;
+        public enum GamePhase { PREMATCH, AUTO, PAUSE, TELEOP, POSTMATCH };
+        public static GamePhase currentGamePhase = GamePhase.PREMATCH;
+
+        public static int TimeLeftInPhase = 0;
+
+        public static string redGameString;
+        public static string blueGameString;
 
         static string configPath = "config.txt";
 
@@ -55,6 +59,26 @@ namespace PFMS
             redGameString = gameStrings[selection][0];
             redGameString = gameStrings[selection][1];
 
+        }
+
+        static bool readyForMatchStart()
+        {
+            if (!red1.readyForMatchStart() || !red2.readyForMatchStart() || !red3.readyForMatchStart()) { return false; }
+            if (!blue1.readyForMatchStart() || !blue2.readyForMatchStart() || !blue3.readyForMatchStart()) { return false; }
+
+            return true;
+        }
+
+        static void eStopThread()
+        {
+            while (currentGamePhase != GamePhase.POSTMATCH && !estop)
+            {
+                ConsoleKeyInfo keyInfo = Console.ReadKey();
+                if (keyInfo.Key == ConsoleKey.Enter)
+                {
+                    estop = true;
+                }
+            }
         }
 
         static void Main(string[] args)
@@ -120,47 +144,173 @@ namespace PFMS
             generateGameString();
             Console.WriteLine("Game String for Red: " + redGameString);
             Console.WriteLine("Game String for Blue: " + blueGameString);
+            Console.WriteLine();
+            Console.WriteLine("Press Enter to start connecting Driver Stations.");
+            Console.ReadLine();
 
-            //TODO THIS CHECK CHEESY ARENA
-            TcpListener dsConnectListener = new TcpListener(FMSIp, 1750);
+            Console.WriteLine("Now waiting for driver stations to connect.");
+            //TODO THIS LOOP CHECK CHEESY ARENA
+            ThreadStart dsConnectThreadRef = new ThreadStart(dsConnectThread);
+            Thread dsConnectThreadObj = new Thread(dsConnectThreadRef);
+            dsConnectThreadObj.Start();
 
-            listener.Start();
+            while (!readyForMatchStart())
+            {
+                currentGamePhase = GamePhase.PREMATCH;
+                Console.Clear();
+                Console.WriteLine("Field Status: PreMatch (Waiting on driver stations and robots to connect)");
+                Console.WriteLine();
+                Console.WriteLine("Current Team Statuses:");
+                Console.WriteLine(red1.ToString());
+                Console.WriteLine(red2.ToString());
+                Console.WriteLine(red3.ToString());
+                Console.WriteLine(blue1.ToString());
+                Console.WriteLine(blue2.ToString());
+                Console.WriteLine(blue3.ToString());
+                Thread.Sleep(20);
+            }
+
+            Console.Clear();
+            Console.WriteLine("Field Status: PreMatch (Ready)");
+            Console.WriteLine();
+            Console.WriteLine("Current Team Statuses:");
+            Console.WriteLine(red1.ToString());
+            Console.WriteLine(red2.ToString());
+            Console.WriteLine(red3.ToString());
+            Console.WriteLine(blue1.ToString());
+            Console.WriteLine(blue2.ToString());
+            Console.WriteLine(blue3.ToString());
+            Console.WriteLine();
+            Console.WriteLine("Press Enter to start the match.");
+            Console.ReadLine();
+
+            red1.sendGameStringPacket();
+            red2.sendGameStringPacket();
+            red3.sendGameStringPacket();
+            blue1.sendGameStringPacket();
+            blue2.sendGameStringPacket();
+            blue3.sendGameStringPacket();
+            
+            Console.Clear();
+            Console.WriteLine("Field Status: Countdown");
+            Console.WriteLine("Teams Participating: " + red1.TeamNumber + ", " + red2.TeamNumber + ", " + red3.TeamNumber + ", " + blue1.TeamNumber + ", " + blue2.TeamNumber + ", and " + blue3.TeamNumber);
+            TimeLeftInPhase = options["CountdownTime"];
+            Console.WriteLine("Match Begins in " + TimeLeftInPhase);
+
+            while (TimeLeftInPhase > 0 && currentGamePhase == GamePhase.PREMATCH)
+            {
+                Thread.Sleep(1000);
+                TimeLeftInPhase--;
+            }
+
+            ThreadStart estopThreadRef = new ThreadStart(eStopThread);
+            Thread estopThread = new Thread(estopThreadRef);
+            estopThread.Start();
+
+            currentGamePhase = GamePhase.AUTO;
+            TimeLeftInPhase = options["AutonomousTime"];
+            while (TimeLeftInPhase > 0 && currentGamePhase == GamePhase.AUTO && !estop)
+            {
+                Console.Clear();
+                Console.WriteLine("Field Status: Autonomous");
+                Console.WriteLine("Teams Participating: " + red1.TeamNumber + ", " + red2.TeamNumber + ", " + red3.TeamNumber + ", " + blue1.TeamNumber + ", " + blue2.TeamNumber + ", and " + blue3.TeamNumber);
+                Console.WriteLine("{0} seconds remain in Autonomous.", TimeLeftInPhase);
+                Console.WriteLine();
+                Console.WriteLine("Press Enter to EStop the match.");
+            }
+
+            currentGamePhase = GamePhase.PAUSE;
+            TimeLeftInPhase = options["PauseTime"];
+            while (TimeLeftInPhase > 0 && currentGamePhase == GamePhase.PAUSE && !estop)
+            {
+                Console.Clear();
+                Console.WriteLine("Field Status: Pause between Autonomous and Teloperated");
+                Console.WriteLine("Teams Participating: " + red1.TeamNumber + ", " + red2.TeamNumber + ", " + red3.TeamNumber + ", " + blue1.TeamNumber + ", " + blue2.TeamNumber + ", and " + blue3.TeamNumber);
+                Console.WriteLine("{0} seconds remain in Pause.", TimeLeftInPhase);
+                Console.WriteLine();
+                Console.WriteLine("Press Enter to EStop the match.");
+            }
+
+            currentGamePhase = GamePhase.TELEOP;
+            TimeLeftInPhase = options["TeleoperatedTime"];
+            while (TimeLeftInPhase > 0 && currentGamePhase == GamePhase.TELEOP && !estop)
+            {
+                Console.Clear();
+                Console.WriteLine("Field Status: Teleoperated");
+                Console.WriteLine("Teams Participating: " + red1.TeamNumber + ", " + red2.TeamNumber + ", " + red3.TeamNumber + ", " + blue1.TeamNumber + ", " + blue2.TeamNumber + ", and " + blue3.TeamNumber);
+                Console.WriteLine("{0} seconds remain in Teleoperated.", TimeLeftInPhase);
+                Console.WriteLine("Game Strings: Red: {0} Blue: {1}", redGameString, blueGameString);
+                Console.WriteLine();
+                Console.WriteLine("Press Enter to EStop the match.");
+            }
+
+            currentGamePhase = GamePhase.POSTMATCH;
+
+            Console.Clear();
+            Console.WriteLine("Field Status: Match Complete");
+            Console.WriteLine();
+            Console.WriteLine("Cleaning up.");
+            red1.dispose();
+            red2.dispose();
+            red3.dispose();
+            blue1.dispose();
+            blue2.dispose();
+            blue3.dispose();
+            Console.WriteLine("All done! Thank you for using the PFMS by MoSadie.");
+            Console.WriteLine("To start another match, just restart this program.");
+            Console.WriteLine();
+            Console.WriteLine("Hit any key to exit...");
+            Console.Read();
+        }
+
+        static void dsConnectThread()
+        {
+            TcpListener dsListener = new TcpListener(FMSIp, 1750);
+            Console.WriteLine("Listening for driver stations on {0} on port {1}", FMSIp.ToString(), 1750);
 
             while (true)
             {
-                Console.WriteLine("Waiting for a connection...");
-                TcpClient client = listener.AcceptTcpClient();
-                Console.WriteLine("Connection Gotten!");
+                TcpClient tcpClient = dsListener.AcceptTcpClient();
 
-                byte[] bytes = new byte[1024];
-                string data;
-                int i;
+                byte[] buffer = new byte[5];
+                tcpClient.GetStream().Read(buffer, 0, buffer.Length);
 
-                NetworkStream stream = client.GetStream();
-
-                i = stream.Read(bytes, 0, bytes.Length);
-
-                while (i != 0)
+                if (!(buffer[0] == 0 && buffer[1] == 3 && buffer[2] == 24))
                 {
-                    data = System.Text.Encoding.ASCII.GetString(bytes, 0, i);
-                    Console.WriteLine(String.Format("Received: {0}", data));
-
-                    data = data.ToUpper();
-
-                    //Insert fms response here.
-                    byte[] msg = System.Text.Encoding.ASCII.GetBytes(data);
-
-                    stream.Write(msg, 0, msg.Length);
-                    Console.WriteLine(String.Format("Sent: {0}", data));
-
-                    i = stream.Read(bytes, 0, bytes.Length);
+                    tcpClient.Close();
+                    continue;
                 }
 
-                client.Close();
-            }
+                int teamId = ((int)buffer[3]) << 8 + ((int)buffer[4]);
 
-            Console.WriteLine("Hit enter to continue...");
-            Console.Read();
+                int allianceStation = -1;
+                IPAddress dsIp = IPAddress.Parse(tcpClient.Client.RemoteEndPoint.ToString());
+                if (red1.TeamNumber == teamId) { allianceStation = 0; red1.setDsConnection(dsIp, tcpClient); }
+                else if (red2.TeamNumber == teamId) { allianceStation = 1; red2.setDsConnection(dsIp, tcpClient); }
+                else if (red3.TeamNumber == teamId) { allianceStation = 2; red3.setDsConnection(dsIp, tcpClient); }
+                else if (blue1.TeamNumber == teamId) { allianceStation = 3; blue1.setDsConnection(dsIp, tcpClient); }
+                else if (blue2.TeamNumber == teamId) { allianceStation = 4; blue2.setDsConnection(dsIp, tcpClient); }
+                else if (blue3.TeamNumber == teamId) { allianceStation = 5; blue3.setDsConnection(dsIp, tcpClient); }
+
+                if (allianceStation == -1)
+                {
+                    Console.WriteLine("Driver Station from team {0} attempted to connect, but they are not in this match!", teamId);
+                    tcpClient.Close();
+                    continue;
+                }
+
+                Console.WriteLine("Team {0} has connected their driver station!", teamId);
+
+                //byte knowledge from Team 254's Cheesy Arena.
+                byte[] assignmentPacket = new byte[5];
+                assignmentPacket[0] = 0; //Size
+                assignmentPacket[1] = 3; //Size
+                assignmentPacket[2] = 25; //Type
+                assignmentPacket[3] = (byte)allianceStation; //allianceStation
+                assignmentPacket[4] = 0; //Station Status, I currently do not have checks for correct station, since there is no vlan.
+
+                tcpClient.GetStream().Write(assignmentPacket, 0, assignmentPacket.Length);
+            }
         }
     }
 
@@ -191,6 +341,7 @@ namespace PFMS
                 }
             } else
             {
+                TeamNumber = 0;
                 robotIp = IPAddress.Parse("10.0.0.2");
             }
             radioIp = IPAddress.Parse(robotIp.ToString().Substring(0, robotIp.ToString().Length - 1) + "1");
@@ -205,16 +356,16 @@ namespace PFMS
             recieveDataThread.Start();
         }
 
-        int TeamNumber;
-        bool closed = false;
-        IPAddress robotIp;
-        IPAddress radioIp;
-        IPAddress driverStationIp;
-        bool isDSConnected = false;
-        bool isRobotRadioConnected = false;
-        bool isRoboRioConnected = false;
-        AllianceStation allianceStation;
-        int packetCount = 0;
+        public int TeamNumber;
+        public bool closed = false;
+        public IPAddress robotIp;
+        public IPAddress radioIp;
+        public IPAddress driverStationIp;
+        public bool isDSConnected = false;
+        public bool isRobotRadioConnected = false;
+        public bool isRoboRioConnected = false;
+        public AllianceStation allianceStation;
+        public int packetCount = 0;
 
         ThreadStart pingThreadRef;
         Thread pingThread;
@@ -226,15 +377,38 @@ namespace PFMS
         Thread sendDataThread;
 
         UdpClient udpClient;
-        TcpListener tcpListener;
+        public TcpClient tcpClient;
+
+        public void dispose()
+        {
+            if (udpClient != null ) udpClient.Dispose();
+            if (tcpClient != null) tcpClient.Dispose();
+        }
+
+        public void setDsConnection(IPAddress dsIp, TcpClient tcpConnection)
+        {
+            driverStationIp = dsIp;
+            tcpClient = tcpConnection;
+            udpClient = new UdpClient(dsIp.ToString(), 1121);
+        }
+
+        public override string ToString()
+        {
+            return allianceStation.ToString() + ": Team Number " + TeamNumber + " DS IP: " + ((driverStationIp == null) ? "Unregistered" : driverStationIp.ToString()) + " Connection status: DS: " + (isDSConnected ? "Connected" : "Disconnected") + " Radio: " + (isRobotRadioConnected ? "Connected" : "Disconnected") + " Robot: " + (isRoboRioConnected ? "Connected" : "Disconnected");
+        }
 
         public bool isRedAlliance() { return (allianceStation == AllianceStation.RED1 || allianceStation == AllianceStation.RED2 || allianceStation == AllianceStation.RED3); }
+
+        public bool readyForMatchStart()
+        {
+            return (driverStationIp != null && isDSConnected && isRoboRioConnected) || TeamNumber == 0;
+        }
 
         byte[] generateDriverStationControlPacket()
         {
             byte[] packet = new byte[22];
 
-            //Packet defination from 254's Cheesy Arena.
+            //Packet defination from 254's Cheesy Arena. This file to be exact: http://bit.ly/2HChGQ1
             //Packet Count
             packet[0] = (byte) ((packetCount >> 8) & 0xff);
             packet[1] = (byte) (packetCount & 0xff);
@@ -244,14 +418,15 @@ namespace PFMS
 
             //Robot Status
             packet[3] = 0;
-            if (MainClass.currentGameState == MainClass.GameState.AUTO) { packet[3] |= 0x02; }
-            else if (MainClass.currentGameState == MainClass.GameState.TELEOP) { packet[3] |= 0x04; }
+            if (Arena.estop) { packet[3] |= 0x80; }
+            else if (Arena.currentGamePhase.Equals(Arena.GamePhase.AUTO)) { packet[3] |= 0x02; }
+            else if (Arena.currentGamePhase == Arena.GamePhase.TELEOP) { packet[3] |= 0x04; }
 
             //Unused
             packet[4] = 0;
 
             //Alliance Station
-            packet[5] = (int)allianceStation;
+            packet[5] = (byte)(int)allianceStation;
 
             //Match Type
             packet[6] = 1; //Practice
@@ -264,8 +439,8 @@ namespace PFMS
             packet[9] = 1;
 
             //Current Time
-            DateTime currentTime = DateTime.now;
-            int nanoseconds = (currentTime.Ticks % TimeSpan.ticksPerMillasecond % 10) * 100;
+            DateTime currentTime = DateTime.Now;
+            int nanoseconds = (int) (currentTime.Ticks % TimeSpan.TicksPerMillisecond % 10) * 100;
             packet[10] = (byte)(((nanoseconds / 1000) >> 24) & 0xff);
             packet[11] = (byte)(((nanoseconds / 1000) >> 16) & 0xff);
             packet[12] = (byte)(((nanoseconds / 1000) >> 8) & 0xff);
@@ -277,7 +452,39 @@ namespace PFMS
             packet[18] = (byte)currentTime.Month;
             packet[19] = (byte)(currentTime.Year - 1900);
 
-            //TODO Match Time Remaining [20 and 21]
+            //Match Time Remaining
+            packet[20] = (byte)(Arena.TimeLeftInPhase >> 8 & 0xff);
+            packet[21] = (byte)(Arena.TimeLeftInPhase & 0xff);
+
+            return packet;
+        }
+
+        public byte[] generateGameStringPacket()
+        {
+            string gameString = "";
+            if (allianceStation == AllianceStation.RED1 || allianceStation == AllianceStation.RED2 || allianceStation == AllianceStation.RED3) gameString = Arena.redGameString;
+            else if (allianceStation == AllianceStation.BLUE1 || allianceStation == AllianceStation.BLUE2 || allianceStation == AllianceStation.BLUE3) gameString = Arena.blueGameString;
+
+            byte[] stringBuffer = System.Text.Encoding.ASCII.GetBytes(gameString);
+
+            byte[] packet = new byte[stringBuffer.Length + 4];
+            packet[0] = 0; //Size
+            packet[1] = (byte)(stringBuffer.Length + 2); //Size
+            packet[2] = 28; //Type
+            packet[3] = (byte)stringBuffer.Length;
+
+            for(int i = 0; i < stringBuffer.Length; i++)
+            {
+                packet[i + 4] = stringBuffer[i];
+            }
+
+            return packet;
+        }
+
+        public void sendGameStringPacket()
+        {
+            byte[] packet = generateGameStringPacket();
+            tcpClient.GetStream().Write(packet, 0, packet.Length);
         }
 
         public void robotPingThread()
@@ -306,26 +513,15 @@ namespace PFMS
         {
             while (!closed)
             {
-                TcpClient client = tcpListener.AcceptTcpClient();
                 byte[] buffer = new byte[4096];
 
-
-                i = client.GetStream().Read(bytes, 0, bytes.Length);
+                int i = tcpClient.GetStream().Read(buffer, 0, buffer.Length);
 
                 while (i != 0)
                 {
-                    data = System.Text.Encoding.ASCII.GetString(bytes, 0, i);
-                    Console.WriteLine(String.Format("Received: {0}", data));
-
-                    data = data.ToUpper();
-
-                    //Insert fms response here.
-                    byte[] msg = System.Text.Encoding.ASCII.GetBytes(data);
-
-                    stream.Write(msg, 0, msg.Length);
-                    Console.WriteLine(String.Format("Sent: {0}", data));
-
-                    i = client.GetStream().Read(bytes, 0, bytes.Length);
+                    //TODO Add some basic logging?
+                    Thread.Sleep(20); //Don't want to kill the computer.
+                    i = tcpClient.GetStream().Read(buffer, 0, buffer.Length);
                 }
             }
         }
@@ -335,7 +531,7 @@ namespace PFMS
 
     class DriverStationStatusPacket
     {
-        static enum PacketType { KEEP_ALIVE, ROBOT_CONTROL, BAD_PACKET };
+        public enum PacketType { KEEP_ALIVE, ROBOT_CONTROL, BAD_PACKET };
 
         static DriverStationStatusPacket decodeDriverStationStatusPacket(byte[] data)
         {
