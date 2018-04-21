@@ -50,14 +50,14 @@ namespace PFMS
             Dictionary<int, string[]> gameStrings = new Dictionary<int, string[]>();
             gameStrings.Add(0, new string[2] { "RLR", "RLR" });
             gameStrings.Add(1, new string[2] { "LRL", "LRL" });
-            gameStrings.Add(0, new string[2] { "RRR", "LLL" });
-            gameStrings.Add(0, new string[2] { "LLL", "RRR" });
+            gameStrings.Add(2, new string[2] { "RRR", "LLL" });
+            gameStrings.Add(3, new string[2] { "LLL", "RRR" });
 
-            int selection = new Random().Next(0, 5);
-            if (options["GameStringOverride"] == -1 && options["GameStringOverride"] <= 4 && options["GameStringOverride"] >= 0) selection = options["GameStringOverride"];
+            int selection = new Random().Next(0, 4);
+            if (options["GameStringOverride"] == -1 && options["GameStringOverride"] < 4 && options["GameStringOverride"] >= 0) selection = options["GameStringOverride"];
 
             redGameString = gameStrings[selection][0];
-            redGameString = gameStrings[selection][1];
+            blueGameString = gameStrings[selection][1];
 
         }
 
@@ -266,6 +266,7 @@ namespace PFMS
         static void dsConnectThread()
         {
             TcpListener dsListener = new TcpListener(FMSIp, 1750);
+            dsListener.Start();
             Console.WriteLine("Listening for driver stations on {0} on port {1}", FMSIp.ToString(), 1750);
 
             while (true)
@@ -284,7 +285,8 @@ namespace PFMS
                 int teamId = ((int)buffer[3]) << 8 + ((int)buffer[4]);
 
                 int allianceStation = -1;
-                IPAddress dsIp = IPAddress.Parse(tcpClient.Client.RemoteEndPoint.ToString());
+                string ip = tcpClient.Client.RemoteEndPoint.ToString().Split(':')[0];
+                IPAddress dsIp = IPAddress.Parse(ip);
                 if (red1.TeamNumber == teamId) { allianceStation = 0; red1.setDsConnection(dsIp, tcpClient); }
                 else if (red2.TeamNumber == teamId) { allianceStation = 1; red2.setDsConnection(dsIp, tcpClient); }
                 else if (red3.TeamNumber == teamId) { allianceStation = 2; red3.setDsConnection(dsIp, tcpClient); }
@@ -513,6 +515,12 @@ namespace PFMS
         {
             while (!closed)
             {
+                if (tcpClient == null)
+                {
+                    Thread.Sleep(1000);
+                    continue;
+                }
+
                 byte[] buffer = new byte[4096];
 
                 int i = tcpClient.GetStream().Read(buffer, 0, buffer.Length);
