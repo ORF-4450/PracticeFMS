@@ -167,7 +167,7 @@ namespace PFMS
                 Console.WriteLine(blue1.ToString());
                 Console.WriteLine(blue2.ToString());
                 Console.WriteLine(blue3.ToString());
-                Thread.Sleep(20);
+                Thread.Sleep(500);
             }
 
             Console.Clear();
@@ -199,6 +199,7 @@ namespace PFMS
 
             while (TimeLeftInPhase > 0 && currentGamePhase == GamePhase.PREMATCH)
             {
+                Console.WriteLine(TimeLeftInPhase);
                 Thread.Sleep(1000);
                 TimeLeftInPhase--;
             }
@@ -279,10 +280,13 @@ namespace PFMS
                 if (!(buffer[0] == 0 && buffer[1] == 3 && buffer[2] == 24))
                 {
                     tcpClient.Close();
+                    Console.WriteLine("Bad connection");
                     continue;
                 }
 
-                int teamId = ((int)buffer[3]) << 8 + ((int)buffer[4]);
+                int teamId_1 = (int)buffer[3] << 8;
+                int teamId_2 = buffer[4];
+                int teamId = teamId_1 | teamId_2;
 
                 int allianceStation = -1;
                 string ip = tcpClient.Client.RemoteEndPoint.ToString().Split(':')[0];
@@ -356,6 +360,12 @@ namespace PFMS
             recieveDataThreadRef = new ThreadStart(recieveStatusThread);
             recieveDataThread = new Thread(recieveDataThreadRef);
             recieveDataThread.Start();
+
+            sendDataThreadRef = new ThreadStart(sendControlDataThread);
+            sendDataThread = new Thread(sendDataThreadRef);
+            sendDataThread.Start();
+
+            this.allianceStation = allianceStation;
         }
 
         public int TeamNumber;
@@ -396,7 +406,10 @@ namespace PFMS
 
         public override string ToString()
         {
-            return allianceStation.ToString() + ": Team Number " + TeamNumber + " DS IP: " + ((driverStationIp == null) ? "Unregistered" : driverStationIp.ToString()) + " Connection status: DS: " + (isDSConnected ? "Connected" : "Disconnected") + " Radio: " + (isRobotRadioConnected ? "Connected" : "Disconnected") + " Robot: " + (isRoboRioConnected ? "Connected" : "Disconnected");
+            string stringToReturn;
+            if (TeamNumber != 0) stringToReturn = allianceStation.ToString() + ": Team Number " + TeamNumber + " DS IP: " + ((driverStationIp == null) ? "Unregistered" : driverStationIp.ToString()) + " Connection status: DS: " + (isDSConnected ? "Connected" : "Disconnected") + " Radio: " + (isRobotRadioConnected ? "Connected" : "Disconnected") + " Robot: " + (isRoboRioConnected ? "Connected" : "Disconnected");
+            else stringToReturn = allianceStation.ToString() + ": BYPASSED";
+            return stringToReturn;
         }
 
         public bool isRedAlliance() { return (allianceStation == AllianceStation.RED1 || allianceStation == AllianceStation.RED2 || allianceStation == AllianceStation.RED3); }
@@ -459,6 +472,21 @@ namespace PFMS
             packet[21] = (byte)(Arena.TimeLeftInPhase & 0xff);
 
             return packet;
+        }
+
+        void sendControlDataThread()
+        {
+            while (!closed)
+            {
+                if (udpClient != null)
+                {
+                    byte[] packet = generateDriverStationControlPacket();
+                    udpClient.Send(packet, packet.Length);
+                } else
+                {
+                    Thread.Sleep(100);
+                }
+            }
         }
 
         public byte[] generateGameStringPacket()
