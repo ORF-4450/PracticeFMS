@@ -73,7 +73,7 @@ namespace PFMS
         {
             while (currentGamePhase != GamePhase.POSTMATCH && !estop)
             {
-                ConsoleKeyInfo keyInfo = Console.ReadKey();
+                ConsoleKeyInfo keyInfo = Console.ReadKey(true);
                 if (keyInfo.Key == ConsoleKey.Enter)
                 {
                     estop = true;
@@ -195,7 +195,8 @@ namespace PFMS
             Console.WriteLine("Field Status: Countdown");
             Console.WriteLine("Teams Participating: " + red1.TeamNumber + ", " + red2.TeamNumber + ", " + red3.TeamNumber + ", " + blue1.TeamNumber + ", " + blue2.TeamNumber + ", and " + blue3.TeamNumber);
             TimeLeftInPhase = options["CountdownTime"];
-            Console.WriteLine("Match Begins in " + TimeLeftInPhase);
+            Console.WriteLine("Match Begins in " + TimeLeftInPhase + " seconds");
+            Console.WriteLine();
 
             while (TimeLeftInPhase > 0 && currentGamePhase == GamePhase.PREMATCH)
             {
@@ -218,6 +219,9 @@ namespace PFMS
                 Console.WriteLine("{0} seconds remain in Autonomous.", TimeLeftInPhase);
                 Console.WriteLine();
                 Console.WriteLine("Press Enter to EStop the match.");
+
+                Thread.Sleep(1000);
+                TimeLeftInPhase--;
             }
 
             currentGamePhase = GamePhase.PAUSE;
@@ -230,6 +234,9 @@ namespace PFMS
                 Console.WriteLine("{0} seconds remain in Pause.", TimeLeftInPhase);
                 Console.WriteLine();
                 Console.WriteLine("Press Enter to EStop the match.");
+
+                Thread.Sleep(1000);
+                TimeLeftInPhase--;
             }
 
             currentGamePhase = GamePhase.TELEOP;
@@ -243,6 +250,9 @@ namespace PFMS
                 Console.WriteLine("Game Strings: Red: {0} Blue: {1}", redGameString, blueGameString);
                 Console.WriteLine();
                 Console.WriteLine("Press Enter to EStop the match.");
+
+                Thread.Sleep(1000);
+                TimeLeftInPhase--;
             }
 
             currentGamePhase = GamePhase.POSTMATCH;
@@ -260,8 +270,9 @@ namespace PFMS
             Console.WriteLine("All done! Thank you for using the PFMS by MoSadie.");
             Console.WriteLine("To start another match, just restart this program.");
             Console.WriteLine();
-            Console.WriteLine("Hit any key to exit...");
-            Console.Read();
+            Console.WriteLine("Press any key to exit...");
+            Console.ReadKey(true);
+            System.Environment.Exit(0);
         }
 
         static void dsConnectThread()
@@ -513,8 +524,11 @@ namespace PFMS
 
         public void sendGameStringPacket()
         {
-            byte[] packet = generateGameStringPacket();
-            tcpClient.GetStream().Write(packet, 0, packet.Length);
+            if (tcpClient != null)
+            {
+                byte[] packet = generateGameStringPacket();
+                tcpClient.GetStream().Write(packet, 0, packet.Length);
+            }
         }
 
         public void robotPingThread()
