@@ -445,8 +445,9 @@ namespace PFMS
             //Robot Status
             packet[3] = 0;
             if (Arena.estop) { packet[3] |= 0x80; }
-            else if (Arena.currentGamePhase.Equals(Arena.GamePhase.AUTO)) { packet[3] |= 0x02; }
-            else if (Arena.currentGamePhase == Arena.GamePhase.TELEOP) { packet[3] |= 0x04; }
+            if (Arena.currentGamePhase == Arena.GamePhase.AUTO || Arena.currentGamePhase == Arena.GamePhase.PREMATCH) { packet[3] |= 0x02; }
+            if (Arena.currentGamePhase == Arena.GamePhase.TELEOP || Arena.currentGamePhase == Arena.GamePhase.AUTO
+                ) { packet[3] |= 0x04; }
 
             //Unused
             packet[4] = 0;
