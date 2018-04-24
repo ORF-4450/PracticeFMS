@@ -74,9 +74,35 @@ namespace PFMS
             while (currentGamePhase != GamePhase.POSTMATCH && !estop)
             {
                 ConsoleKeyInfo keyInfo = Console.ReadKey(true);
-                if (keyInfo.Key == ConsoleKey.Enter)
+                switch (keyInfo.Key)
                 {
-                    estop = true;
+                    case ConsoleKey.Enter:
+                        estop = true;
+                        break;
+
+                    case ConsoleKey.D1:
+                        if (red1 != null) red1.estop = true;
+                        break;
+
+                    case ConsoleKey.D2:
+                        if (red2 != null) red2.estop = true;
+                        break;
+
+                    case ConsoleKey.D3:
+                        if (red3 != null) red3.estop = true;
+                        break;
+
+                    case ConsoleKey.D4:
+                        if (blue1 != null) blue1.estop = true;
+                        break;
+
+                    case ConsoleKey.D5:
+                        if (blue2 != null) blue2.estop = true;
+                        break;
+
+                    case ConsoleKey.D6:
+                        if (blue3 != null) blue3.estop = true;
+                        break;
                 }
             }
         }
@@ -390,6 +416,8 @@ namespace PFMS
         public AllianceStation allianceStation;
         public int packetCount = 0;
 
+        public bool estop = false;
+
         ThreadStart pingThreadRef;
         Thread pingThread;
 
@@ -418,7 +446,7 @@ namespace PFMS
         public override string ToString()
         {
             string stringToReturn;
-            if (TeamNumber != 0) stringToReturn = allianceStation.ToString() + ": Team Number " + TeamNumber + " DS IP: " + ((driverStationIp == null) ? "Unregistered" : driverStationIp.ToString()) + " Connection status: DS: " + (isDSConnected ? "Connected" : "Disconnected") + " Radio: " + (isRobotRadioConnected ? "Connected" : "Disconnected") + " Robot: " + (isRoboRioConnected ? "Connected" : "Disconnected");
+            if (TeamNumber != 0) stringToReturn = allianceStation.ToString() + ": Team Number " + TeamNumber + " DS IP: " + ((driverStationIp == null) ? "Unregistered" : driverStationIp.ToString()) + " EStop: " + estop + " Connection status: DS: " + (isDSConnected ? "Connected" : "Disconnected") + " Radio: " + (isRobotRadioConnected ? "Connected" : "Disconnected") + " Robot: " + (isRoboRioConnected ? "Connected" : "Disconnected");
             else stringToReturn = allianceStation.ToString() + ": BYPASSED";
             return stringToReturn;
         }
@@ -444,7 +472,7 @@ namespace PFMS
 
             //Robot Status
             packet[3] = 0;
-            if (Arena.estop) { packet[3] |= 0x80; }
+            if (Arena.estop || estop) { packet[3] |= 0x80; }
             if (Arena.currentGamePhase == Arena.GamePhase.AUTO || Arena.currentGamePhase == Arena.GamePhase.PREMATCH) { packet[3] |= 0x02; }
             if (Arena.currentGamePhase == Arena.GamePhase.TELEOP || Arena.currentGamePhase == Arena.GamePhase.AUTO
                 ) { packet[3] |= 0x04; }
