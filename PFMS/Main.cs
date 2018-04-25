@@ -13,7 +13,8 @@ namespace PFMS
 {
     class Arena
     {
-        const string version = "2018.0.0";
+        public const string version = "2018.1.0.0"; //Syntax: Year.Major.Minor.Revision
+
         static string[] defaultOptions = new string[] {
             "AutonomousTime:15",
             "TeleoperatedTime:135",
@@ -25,6 +26,8 @@ namespace PFMS
         static Dictionary<string, int> options = new Dictionary<string, int>();
 
         static IPAddress FMSIp = IPAddress.Parse("10.00.100.5");
+
+        public enum AllianceStations { RED1, RED2, RED3, BLUE1, BLUE2, BLUE3 }
 
         static DriverStation red1;
         static DriverStation red2;
@@ -40,9 +43,11 @@ namespace PFMS
 
         public static int TimeLeftInPhase = 0;
 
+        //For the 2018 season, there are two different game strings sent, one for the Red alliance, and one for the Blue alliance.
         public static string redGameString;
         public static string blueGameString;
 
+        //This will place the config file in the same directory as PFMS.exe
         static string configPath = "config.txt";
 
         static void generateGameString()
@@ -112,7 +117,7 @@ namespace PFMS
             //Welcome Message
             Console.Clear();
             Console.WriteLine("Welcome to the unoffical practice FMS Version {0}", version);
-            Console.WriteLine("Written by MoSadie.");
+            Console.WriteLine("Written by MoSadie for FRC Team 4450, the Olympia Robotics Federation.");
             Console.WriteLine("Robots are dangerous. Please be safe.");
 
             //Config Setup
@@ -148,22 +153,22 @@ namespace PFMS
             Console.WriteLine();
             Console.WriteLine();
             Console.Write("Enter a team number for the Red 1 driver station: ");
-            red1 = new DriverStation(Console.ReadLine(), AllianceStation.RED1);
+            red1 = new DriverStation(Console.ReadLine(), AllianceStations.RED1);
             Console.WriteLine();
             Console.Write("Enter a team number for the Red 2 driver station: ");
-            red2 = new DriverStation(Console.ReadLine(), AllianceStation.RED2);
+            red2 = new DriverStation(Console.ReadLine(), AllianceStations.RED2);
             Console.WriteLine();
             Console.Write("Enter a team number for the Red 3 driver station: ");
-            red3 = new DriverStation(Console.ReadLine(), AllianceStation.RED3);
+            red3 = new DriverStation(Console.ReadLine(), AllianceStations.RED3);
             Console.WriteLine();
             Console.Write("Enter a team number for the Blue 1 driver station: ");
-            blue1 = new DriverStation(Console.ReadLine(), AllianceStation.BLUE1);
+            blue1 = new DriverStation(Console.ReadLine(), AllianceStations.BLUE1);
             Console.WriteLine();
             Console.Write("Enter a team number for the Blue 2 driver station: ");
-            blue2 = new DriverStation(Console.ReadLine(), AllianceStation.BLUE2);
+            blue2 = new DriverStation(Console.ReadLine(), AllianceStations.BLUE2);
             Console.WriteLine();
             Console.Write("Enter a team number for the Blue 3 driver station: ");
-            blue3 = new DriverStation(Console.ReadLine(), AllianceStation.BLUE3);
+            blue3 = new DriverStation(Console.ReadLine(), AllianceStations.BLUE3);
 
             //2018 Specific Game String Generation
             Console.WriteLine();
@@ -198,14 +203,7 @@ namespace PFMS
 
             Console.Clear();
             Console.WriteLine("Field Status: PreMatch (Ready)");
-            Console.WriteLine();
-            Console.WriteLine("Current Team Statuses:");
-            Console.WriteLine(red1.ToString());
-            Console.WriteLine(red2.ToString());
-            Console.WriteLine(red3.ToString());
-            Console.WriteLine(blue1.ToString());
-            Console.WriteLine(blue2.ToString());
-            Console.WriteLine(blue3.ToString());
+            Console.WriteLine("Teams Participating: " + red1.TeamNumber + ", " + red2.TeamNumber + ", " + red3.TeamNumber + ", " + blue1.TeamNumber + ", " + blue2.TeamNumber + ", and " + blue3.TeamNumber);
             Console.WriteLine();
             Console.WriteLine("Press Enter to start the match.");
             Console.ReadLine();
@@ -221,7 +219,7 @@ namespace PFMS
             Console.WriteLine("Field Status: Countdown");
             Console.WriteLine("Teams Participating: " + red1.TeamNumber + ", " + red2.TeamNumber + ", " + red3.TeamNumber + ", " + blue1.TeamNumber + ", " + blue2.TeamNumber + ", and " + blue3.TeamNumber);
             TimeLeftInPhase = options["CountdownTime"];
-            Console.WriteLine("Match Begins in " + TimeLeftInPhase + " seconds");
+            Console.WriteLine("Match Begins in " + TimeLeftInPhase + " seconds.");
             Console.WriteLine();
 
             while (TimeLeftInPhase > 0 && currentGamePhase == GamePhase.PREMATCH)
@@ -245,6 +243,24 @@ namespace PFMS
                 Console.WriteLine("{0} seconds remain in Autonomous.", TimeLeftInPhase);
                 Console.WriteLine();
                 Console.WriteLine("Press Enter to EStop the match.");
+
+                if (!red1.estop) Console.WriteLine("Press 1 to EStop team {0}", red1.TeamNumber);
+                else Console.WriteLine("Team {0} has been estopped.", red1.TeamNumber);
+
+                if (!red2.estop) Console.WriteLine("Press 2 to EStop team {0}", red2.TeamNumber);
+                else Console.WriteLine("Team {0} has been estopped.", red2.TeamNumber);
+
+                if (!red3.estop) Console.WriteLine("Press 3 to EStop team {0}", red3.TeamNumber);
+                else Console.WriteLine("Team {0} has been estopped.", red3.TeamNumber);
+
+                if (!blue1.estop) Console.WriteLine("Press 4 to EStop team {0}", blue1.TeamNumber);
+                else Console.WriteLine("Team {0} has been estopped.", blue1.TeamNumber);
+
+                if (!blue2.estop) Console.WriteLine("Press 5 to EStop team {0}", blue2.TeamNumber);
+                else Console.WriteLine("Team {0} has been estopped.", blue2.TeamNumber);
+
+                if (!blue3.estop) Console.WriteLine("Press 6 to EStop team {0}", blue3.TeamNumber);
+                else Console.WriteLine("Team {0} has been estopped.", blue3.TeamNumber);
 
                 Thread.Sleep(1000);
                 TimeLeftInPhase--;
@@ -304,7 +320,18 @@ namespace PFMS
         static void dsConnectThread()
         {
             TcpListener dsListener = new TcpListener(FMSIp, 1750);
-            dsListener.Start();
+
+            try
+            {
+                dsListener.Start();
+            } catch
+            {
+                Console.WriteLine();
+                Console.WriteLine("Something went wrong while attempting to start connecting driver stations. Please check the network configuration and try again.");
+                Console.WriteLine("Press any key to exit.");
+                Console.ReadKey(true);
+                System.Environment.Exit(0);
+            }
             Console.WriteLine("Listening for driver stations on {0} on port {1}", FMSIp.ToString(), 1750);
 
             while (true)
@@ -355,285 +382,5 @@ namespace PFMS
                 tcpClient.GetStream().Write(assignmentPacket, 0, assignmentPacket.Length);
             }
         }
-    }
-
-    class DriverStation
-    {
-        public DriverStation(string teamNumber, AllianceStation allianceStation)
-        {
-            if (int.TryParse(teamNumber, out TeamNumber))
-            {
-                switch(teamNumber.Length)
-                {
-                    case 1:
-                    case 2:
-                        robotIp = IPAddress.Parse("10.00." + teamNumber + ".2");
-                        break;
-
-                    case 3:
-                        robotIp = IPAddress.Parse("10.0" + teamNumber[0] + "." + teamNumber[1] + teamNumber[2] + ".2");
-                        break;
-
-                    case 4:
-                        robotIp = IPAddress.Parse("10." + teamNumber.Substring(0, 2) + "." + teamNumber.Substring(2) + ".2");
-                        break;
-
-                    default:
-                        robotIp = IPAddress.Parse("10.0.0.2");
-                        break;
-                }
-            } else
-            {
-                TeamNumber = 0;
-                robotIp = IPAddress.Parse("10.0.0.2");
-            }
-            radioIp = IPAddress.Parse(robotIp.ToString().Substring(0, robotIp.ToString().Length - 1) + "1");
-            Console.WriteLine("DriverStation created with robot IP of {0} and radio IP of {1}", robotIp.ToString(), radioIp.ToString());
-
-            pingThreadRef = new ThreadStart(robotPingThread);
-            pingThread = new Thread(pingThreadRef);
-            pingThread.Start();
-
-            recieveDataThreadRef = new ThreadStart(recieveStatusThread);
-            recieveDataThread = new Thread(recieveDataThreadRef);
-            recieveDataThread.Start();
-
-            sendDataThreadRef = new ThreadStart(sendControlDataThread);
-            sendDataThread = new Thread(sendDataThreadRef);
-            sendDataThread.Start();
-
-            this.allianceStation = allianceStation;
-        }
-
-        public int TeamNumber;
-        public bool closed = false;
-        public IPAddress robotIp;
-        public IPAddress radioIp;
-        public IPAddress driverStationIp;
-        public bool isDSConnected = false;
-        public bool isRobotRadioConnected = false;
-        public bool isRoboRioConnected = false;
-        public AllianceStation allianceStation;
-        public int packetCount = 0;
-
-        public bool estop = false;
-
-        ThreadStart pingThreadRef;
-        Thread pingThread;
-
-        ThreadStart recieveDataThreadRef;
-        Thread recieveDataThread;
-
-        ThreadStart sendDataThreadRef;
-        Thread sendDataThread;
-
-        UdpClient udpClient;
-        public TcpClient tcpClient;
-
-        public void dispose()
-        {
-            if (udpClient != null ) udpClient.Dispose();
-            if (tcpClient != null) tcpClient.Dispose();
-        }
-
-        public void setDsConnection(IPAddress dsIp, TcpClient tcpConnection)
-        {
-            driverStationIp = dsIp;
-            tcpClient = tcpConnection;
-            udpClient = new UdpClient(dsIp.ToString(), 1121);
-        }
-
-        public override string ToString()
-        {
-            string stringToReturn;
-            if (TeamNumber != 0) stringToReturn = allianceStation.ToString() + ": Team Number " + TeamNumber + " DS IP: " + ((driverStationIp == null) ? "Unregistered" : driverStationIp.ToString()) + " EStop: " + estop + " Connection status: DS: " + (isDSConnected ? "Connected" : "Disconnected") + " Radio: " + (isRobotRadioConnected ? "Connected" : "Disconnected") + " Robot: " + (isRoboRioConnected ? "Connected" : "Disconnected");
-            else stringToReturn = allianceStation.ToString() + ": BYPASSED";
-            return stringToReturn;
-        }
-
-        public bool isRedAlliance() { return (allianceStation == AllianceStation.RED1 || allianceStation == AllianceStation.RED2 || allianceStation == AllianceStation.RED3); }
-
-        public bool readyForMatchStart()
-        {
-            return (driverStationIp != null && isDSConnected && isRoboRioConnected) || TeamNumber == 0;
-        }
-
-        byte[] generateDriverStationControlPacket()
-        {
-            byte[] packet = new byte[22];
-
-            //Packet defination from 254's Cheesy Arena. This file to be exact: http://bit.ly/2HChGQ1
-            //Packet Count
-            packet[0] = (byte) ((packetCount >> 8) & 0xff);
-            packet[1] = (byte) (packetCount & 0xff);
-
-            //Version
-            packet[2] = 0;
-
-            //Robot Status
-            packet[3] = 0;
-            if (Arena.estop || estop) { packet[3] |= 0x80; }
-            if (Arena.currentGamePhase == Arena.GamePhase.AUTO || Arena.currentGamePhase == Arena.GamePhase.PREMATCH) { packet[3] |= 0x02; }
-            if (Arena.currentGamePhase == Arena.GamePhase.TELEOP || Arena.currentGamePhase == Arena.GamePhase.AUTO
-                ) { packet[3] |= 0x04; }
-
-            //Unused
-            packet[4] = 0;
-
-            //Alliance Station
-            packet[5] = (byte)(int)allianceStation;
-
-            //Match Type
-            packet[6] = 1; //Practice
-
-            //Match Number
-            packet[7] = 0;
-            packet[8] = 1;
-
-            //Repeat Number
-            packet[9] = 1;
-
-            //Current Time
-            DateTime currentTime = DateTime.Now;
-            int nanoseconds = (int) (currentTime.Ticks % TimeSpan.TicksPerMillisecond % 10) * 100;
-            packet[10] = (byte)(((nanoseconds / 1000) >> 24) & 0xff);
-            packet[11] = (byte)(((nanoseconds / 1000) >> 16) & 0xff);
-            packet[12] = (byte)(((nanoseconds / 1000) >> 8) & 0xff);
-            packet[13] = (byte)((nanoseconds / 1000) & 0xff);
-            packet[14] = (byte)currentTime.Second;
-            packet[15] = (byte)currentTime.Minute;
-            packet[16] = (byte)currentTime.Hour;
-            packet[17] = (byte)currentTime.Day;
-            packet[18] = (byte)currentTime.Month;
-            packet[19] = (byte)(currentTime.Year - 1900);
-
-            //Match Time Remaining
-            packet[20] = (byte)(Arena.TimeLeftInPhase >> 8 & 0xff);
-            packet[21] = (byte)(Arena.TimeLeftInPhase & 0xff);
-
-            return packet;
-        }
-
-        void sendControlDataThread()
-        {
-            while (!closed)
-            {
-                if (udpClient != null)
-                {
-                    byte[] packet = generateDriverStationControlPacket();
-                    udpClient.Send(packet, packet.Length);
-                } else
-                {
-                    Thread.Sleep(100);
-                }
-            }
-        }
-
-        public byte[] generateGameStringPacket()
-        {
-            string gameString = "";
-            if (allianceStation == AllianceStation.RED1 || allianceStation == AllianceStation.RED2 || allianceStation == AllianceStation.RED3) gameString = Arena.redGameString;
-            else if (allianceStation == AllianceStation.BLUE1 || allianceStation == AllianceStation.BLUE2 || allianceStation == AllianceStation.BLUE3) gameString = Arena.blueGameString;
-
-            byte[] stringBuffer = System.Text.Encoding.ASCII.GetBytes(gameString);
-
-            byte[] packet = new byte[stringBuffer.Length + 4];
-            packet[0] = 0; //Size
-            packet[1] = (byte)(stringBuffer.Length + 2); //Size
-            packet[2] = 28; //Type
-            packet[3] = (byte)stringBuffer.Length;
-
-            for(int i = 0; i < stringBuffer.Length; i++)
-            {
-                packet[i + 4] = stringBuffer[i];
-            }
-
-            return packet;
-        }
-
-        public void sendGameStringPacket()
-        {
-            if (tcpClient != null)
-            {
-                byte[] packet = generateGameStringPacket();
-                tcpClient.GetStream().Write(packet, 0, packet.Length);
-            }
-        }
-
-        public void robotPingThread()
-        {
-            Ping ping = new Ping();
-            int timeout = 5;
-            while (!closed)
-            {
-                //Ping Robot Radio
-                PingReply result = ping.Send(radioIp, timeout);
-                isRobotRadioConnected = result.Status == IPStatus.Success;
-
-                //Ping Robot
-                result = ping.Send(robotIp, timeout);
-                isRoboRioConnected = result.Status == IPStatus.Success;
-
-                if (driverStationIp != null)
-                {
-                    result = ping.Send(driverStationIp, timeout);
-                    isDSConnected = result.Status == IPStatus.Success;
-                }
-            }
-        }
-
-        public void recieveStatusThread()
-        {
-            while (!closed)
-            {
-                if (tcpClient == null)
-                {
-                    Thread.Sleep(1000);
-                    continue;
-                }
-
-                byte[] buffer = new byte[4096];
-
-                int i = tcpClient.GetStream().Read(buffer, 0, buffer.Length);
-
-                while (i != 0)
-                {
-                    //TODO Add some basic logging?
-                    Thread.Sleep(20); //Don't want to kill the computer.
-                    i = tcpClient.GetStream().Read(buffer, 0, buffer.Length);
-                }
-            }
-        }
-    }
-
-    enum AllianceStation { RED1, RED2, RED3, BLUE1, BLUE2, BLUE3 }
-
-    class DriverStationStatusPacket
-    {
-        public enum PacketType { KEEP_ALIVE, ROBOT_CONTROL, BAD_PACKET };
-
-        static DriverStationStatusPacket decodeDriverStationStatusPacket(byte[] data)
-        {
-            DriverStationStatusPacket packet = new DriverStationStatusPacket();
-			if ((int) data[2] == 28) {
-                packet.packetType = PacketType.KEEP_ALIVE;
-                return packet;
-			} else if ((int) data[2] != 22) {
-                packet.packetType = PacketType.BAD_PACKET;
-				return packet;
-			}
-
-            packet.packetType = PacketType. ROBOT_CONTROL;
-
-            return packet;
-        }
-
-        public DriverStationStatusPacket()
-        {
-
-        }
-		
-		public PacketType packetType;
-		
     }
 }

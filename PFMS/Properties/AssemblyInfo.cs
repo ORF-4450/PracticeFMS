@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyTitle("PracticeFMS")]
 [assembly: AssemblyDescription("An unoffical FIRST FMS that runs FRC robots.")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("MoSadie")]
+[assembly: AssemblyCompany("MoSadie / FRC Team 4450, the Olympia Robotics Federation")]
 [assembly: AssemblyProduct("PFMS")]
 [assembly: AssemblyCopyright("Copyright ©  2018")]
 [assembly: AssemblyTrademark("")]
@@ -32,5 +32,5 @@ using System.Runtime.InteropServices;
 // You can specify all the values or you can default the Build and Revision Numbers
 // by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion("2018.0.0.1")]
-[assembly: AssemblyFileVersion("2018.0.0.1")]
+[assembly: AssemblyVersion(PFMS.Arena.version)]
+[assembly: AssemblyFileVersion(PFMS.Arena.version)]

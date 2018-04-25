@@ -3,14 +3,14 @@
 This is an unofficial, match play only, FIRST Robotics Competition Field Management System, designed for use to just run robots on a practice field.
 
 ## Features
-- Easy Setup. (No $20,000 equipment roadcase, just a computer and router)
-- Not Expensive. (Just use a router and one computer as the server.)
+- Easy Setup. (No $20,000 equipment roadcase, just a computer, router, and other optional materials)
+- Not Expensive. (Just use a $60 router and one regular computer as the server.)
 - Easily Configurable. (10 minute autonomous? Why not!);
 
 ### Requirements
-- One computer with this program on it. (Doesn't have to be a supercomputer, just not a potato)
+- One computer with this program on it. (Pretty much any computer laying around will work)
 - One computer (can be the same computer) with the [FRC Radio Configuration Utility](http://wpilib.screenstepslive.com/s/currentCS/m/troubleshooting/l/442032-programming-radios-for-fms-offseason).
-- One router that can broadcast WIFI. (Pretty much anything like [this one](https://www.amazon.com/Cisco-Linksys-WRT610N-Simultaneous-Dual-N-Wireless/dp/B001AZ01EO/) or better will work.)
+- One router that can broadcast WIFI. (Pretty much anything like [this one](https://www.amazon.com/NETGEAR-AC1200-Smart-Router-Ethernet/dp/B072Z68KJ4/) or better will work, as long as it supports a 5Ghz network)
 - (Optional) One (or more) network switch(s) for connecting the PFMS computer and the driver station computers to the network.
 
 ### Inspiration / Resources
