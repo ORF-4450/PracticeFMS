@@ -5,7 +5,7 @@ First, look at the Wifi light on the robot radio. (See [this](http://wpilib.scre
 |---|---|
 | Off | Either: Non-FRC firmware (Radio needs reprogramming) or not connected to the field network. |
 | Green | Radio is connected to field network. Something else is wrong.
-| Red/Yellow/Orange | Not programmed in FMS Offseason mode. See [here](https://github.com/MoSadie/PracticeFMS/wiki/Quickstart#step-3-program-robot-radios) for instructions on how to program the radio in FMS Offseason mode. |
+| Red/Yellow/Orange | Not programmed in FMS Offseason mode. See [here](Quickstart.md#step-3-program-robot-radios) for instructions on how to program the radio in FMS Offseason mode. |
 
 ### Common problems that cause the Wifi light to be off:
 * The WPA key or SSID for the field network was typed in incorrectly.
