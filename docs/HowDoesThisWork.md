@@ -1,0 +1,30 @@
+# How does this work?
+
+## Let's start with the goals for this project:
+* Have the driver station software report that an FMS is connected.
+* Be able to complete a "match" without having to buy $20,000 worth of equipment.
+
+## And what was _not_ a goal:
+* Award assignments (TIL: The FMS is where awards are presented from, not a powerpoint)
+* Match schedule generation
+* Connecting to any field electronics (I expect this to be used on a practice field with no electronics, meaning no stack lights or displays or anything on the field)
+* Force teams to do anything weird to connect to it. (I didn't want to force network cables to the robot or something like that.)
+* Any sense of security provided by the field network. (It's just complex and not required for a practice field, also managed switches are expensive and complex)
+
+## Here is how FIRST made this easier for me:
+In the home version of the radio configuration utility, there is what is called "FMS Offseason" mode. This has the robot radios connected automatically to a given network. This means I don't have to deal with how to connect radios to the network. This took a major hurdle away since I only had to deal with the driver station to/from FMS communication.
+Also, all robot driving is directly from driver station to robot, so I don't need to interfere with their communication, I just need to make sure that they can connect to each other.
+
+## Here is how Team 254, the Cheesy Poofs, made this easier for me:
+In case you didn't know, the Cheesy Poofs host an annual event called the Cheesy Champs, and they use their own custom FMS called Cheesy Arena.
+[They post their source code publically on github](https://github.com/Team254/Cheesy-Arena), which means there is open source information on what is required to connect to a driver station and tell it that it is connected to an FMS.
+
+## Now how actually does it work?
+When you open the program, you are prompted to enter up to 6 team numbers. For each team number, it is converted into two different IP addresses (10.TE.AM.1 for the robot radio and 10.TE.AM.2 for the RoboRio), and a Driver Station object is created. This object has several threads that ping the driver station, robot radio, and RoboRio, and other tasks like sending the control packet. This packet is very important since it's what tells the driver station when to enable the robot and other information (See [here](https://github.com/MoSadie/PracticeFMS/blob/eb711122961ce81e93aee656db2f40d6dc7a0ade/PFMS/DriverStation.cs#L116) for the exact information)
+
+But at the point team numbers are being entered, driver stations aren't usually connected or if so, they aren't at a nice IP address like 10.TE.AM.5, but that's where the assignment packet and the configuration of the PracticeFMS computer come in. There is a hardcoded IP address for the FMS, 10.0.100.5, and the driver station [sends a packet](https://github.com/MoSadie/PracticeFMS/blob/eb711122961ce81e93aee656db2f40d6dc7a0ade/PFMS/Main.cs#L342) to that IP address to check if the driver station is in that match and that it is in the right station. In the case of this program, [the packet tells the program at what IP that team's driver station can be reached at, and opens up a TCP and UDP connection to it](https://github.com/MoSadie/PracticeFMS/blob/eb711122961ce81e93aee656db2f40d6dc7a0ade/PFMS/DriverStation.cs#L94). The FMS then sends an [assignment packet](https://github.com/MoSadie/PracticeFMS/blob/eb711122961ce81e93aee656db2f40d6dc7a0ade/PFMS/Main.cs#L375) back to the driver station, telling it if everything is good to go. At this point, the Driver Station object has been informed of the driver station's IP address, so it starts [sending control packets](https://github.com/MoSadie/PracticeFMS/blob/eb711122961ce81e93aee656db2f40d6dc7a0ade/PFMS/DriverStation.cs#L172) to the driver station, which causes the driver station's software to enter FMS mode (Indicated by a blue bar under the robot status and "FMS Connected" appearing where the enable/disable buttons would normally be). At this point, the PracticeFMS program is now checking for 3 things from each team: The driver station having been assigned, the robot radio being pingable, and the RoboRio being pingable. After all of the requirements have been satisfied for all teams competing, the PracticeFMS can be told to start the match countdown. At this point, [the Game Specific String packet](https://github.com/MoSadie/PracticeFMS/blob/eb711122961ce81e93aee656db2f40d6dc7a0ade/PFMS/DriverStation.cs#L188) is [sent](https://github.com/MoSadie/PracticeFMS/blob/eb711122961ce81e93aee656db2f40d6dc7a0ade/PFMS/DriverStation.cs#L210) to the driver stations, which in 2018 is alliance dependent.
+Over the whole program, there is a variable that tracks [the current game phase](https://github.com/MoSadie/PracticeFMS/blob/eb711122961ce81e93aee656db2f40d6dc7a0ade/PFMS/Main.cs#L42) and the [time left in the current game phase](https://github.com/MoSadie/PracticeFMS/blob/eb711122961ce81e93aee656db2f40d6dc7a0ade/PFMS/Main.cs#L44) which is used by the [control packet generator](https://github.com/MoSadie/PracticeFMS/blob/eb711122961ce81e93aee656db2f40d6dc7a0ade/PFMS/DriverStation.cs#L116) to help constantly build and send updated control packets to each driver station as fast as possible. That's all that is required for match play.
+
+Another thing that starts at the start of the match is the [estop thread](https://github.com/MoSadie/PracticeFMS/blob/eb711122961ce81e93aee656db2f40d6dc7a0ade/PFMS/Main.cs#L77). This thread runs the entire time there are robots enabled and allows the PracticeFMS computer to E-stop any robot or the entire match. Estopping a robot is as simple as adding a byte to the control packet, and the way I E-stop the match is by E-stopping every robot and forcing the timer to 0 for the rest of the phases.
+
+[Return Home](index.md)
