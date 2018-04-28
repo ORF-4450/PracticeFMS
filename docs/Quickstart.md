@@ -52,3 +52,5 @@ If the need arises that a robot needs to be Estopped, there is a designated keyb
 | 1 | 2 | 3 | 4 | 5 | 6 |
 
 If something has gone terribly wrong and the whole match, including the timer and robots, needs to be Estopped immediately, just press Enter in the PracticeFMS program while the match is running. This will immediately Estop every robot and end the match.
+
+[Return Home](index.md)

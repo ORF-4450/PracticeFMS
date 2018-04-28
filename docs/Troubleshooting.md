@@ -16,3 +16,5 @@ Things to check:
 * Has the PracticeFMS program been told to connect driver stations yet? After typing all team number in, there should be a prompt to "Press Enter to start connecting Driver Stations."
 * Are the correct team numbers entered for the practice match? If not, there should be messages that clear every half-second that say which team number is attempting to connect. The program just needs to be closed and reopened if there is an incorrect team number.
 * Are the driver stations actually connected to the field network? It depends on the individual network setup, but the most realistic setup is to use ethernet cables connecting driver stations to the field network. Also, check to see if the correct network adapters are enabled.
+
+[Return Home](index.md)
