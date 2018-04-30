@@ -2,7 +2,7 @@
 Things to check:
 - The driver station is connected to the network. (Indicated by the "Connected to FMS" message appearing if appropriate)
 - The robot is on.
-- The robot's radio has been configured. (See [here](Troubleshooting.md#Robots-wont-connect-to-the-router) for info on checking this.)
+- The robot's radio has been configured. (See [here](Troubleshooting.md#robots-wont-connect-to-the-router) for info on checking this.)
 
 ## Robots won't connect to the router!
 First, look at the Wifi light on the robot radio. (See [this](http://wpilib.screenstepslive.com/s/currentCS/m/troubleshooting/l/599674-status-light-quick-reference#OpenMeshRadio) picture for what lights are which)
