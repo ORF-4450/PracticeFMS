@@ -10,7 +10,7 @@ First, look at the Wifi light on the robot radio. (See [this](http://wpilib.scre
 | Robot Radio Wifi Light | Status
 |---|---|
 | Off | Either: Non-FRC firmware (Radio needs reprogramming) or not connected to the field network. |
-| Green | Radio is connected to field network. Something else is wrong.
+| Green | Radio is connected to field network. Something else is wrong. Check the field network configuration. |
 | Red/Yellow/Orange | Not programmed in FMS Offseason mode. See [here](Quickstart.md#step-3-program-robot-radios) for instructions on how to program the radio in FMS Offseason mode. |
 
 ### Common problems that cause the Wifi light to be off:
