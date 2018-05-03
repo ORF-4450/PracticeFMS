@@ -49,9 +49,9 @@ namespace PFMS
             pingThread = new Thread(pingThreadRef);
             pingThread.Start();
 
-            recieveDataThreadRef = new ThreadStart(recieveStatusThread);
-            recieveDataThread = new Thread(recieveDataThreadRef);
-            recieveDataThread.Start();
+            //recieveDataThreadRef = new ThreadStart(recieveStatusThread);
+            //recieveDataThread = new Thread(recieveDataThreadRef);
+            //recieveDataThread.Start();
 
             sendDataThreadRef = new ThreadStart(sendControlDataThread);
             sendDataThread = new Thread(sendDataThreadRef);
@@ -87,6 +87,7 @@ namespace PFMS
 
         public void dispose()
         {
+            closed = true;
             if (udpClient != null) udpClient.Dispose();
             if (tcpClient != null) tcpClient.Dispose();
         }
@@ -238,6 +239,7 @@ namespace PFMS
             }
         }
 
+        /*
         public void recieveStatusThread()
         {
             while (!closed)
@@ -247,12 +249,12 @@ namespace PFMS
                     Thread.Sleep(1000);
                     continue;
                 }
-
+                
                 byte[] buffer = new byte[4096];
-
+                
                 int i = tcpClient.GetStream().Read(buffer, 0, buffer.Length);
 
-                while (i != 0)
+                while (i != 0 && !closed)
                 {
                     //TODO Add some basic logging?
                     Thread.Sleep(20); //Don't want to kill the computer.
@@ -260,5 +262,6 @@ namespace PFMS
                 }
             }
         }
+        */
     }
 }

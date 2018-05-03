@@ -13,7 +13,7 @@ namespace PFMS
 {
     class Arena
     {
-        public const string version = "2018.1.0.0"; //Syntax: Year.Major.Minor.Revision
+        public const string version = "2018.1.0.1"; //Syntax: Year.Major.Minor.Revision
 
         static string[] defaultOptions = new string[] {
             "AutonomousTime:15",
@@ -59,7 +59,7 @@ namespace PFMS
             gameStrings.Add(3, new string[2] { "LLL", "RRR" });
 
             int selection = new Random().Next(0, 4);
-            if (options["GameStringOverride"] == -1 && options["GameStringOverride"] < 4 && options["GameStringOverride"] >= 0) selection = options["GameStringOverride"];
+            if (options["GameStringOverride"] != -1 && options["GameStringOverride"] < 4 && options["GameStringOverride"] >= 0) selection = options["GameStringOverride"];
 
             redGameString = gameStrings[selection][0];
             blueGameString = gameStrings[selection][1];
@@ -277,6 +277,24 @@ namespace PFMS
                 Console.WriteLine();
                 Console.WriteLine("Press Enter to EStop the match.");
 
+                if (!red1.estop) Console.WriteLine("Press 1 to EStop team {0}", red1.TeamNumber);
+                else Console.WriteLine("Team {0} has been estopped.", red1.TeamNumber);
+
+                if (!red2.estop) Console.WriteLine("Press 2 to EStop team {0}", red2.TeamNumber);
+                else Console.WriteLine("Team {0} has been estopped.", red2.TeamNumber);
+
+                if (!red3.estop) Console.WriteLine("Press 3 to EStop team {0}", red3.TeamNumber);
+                else Console.WriteLine("Team {0} has been estopped.", red3.TeamNumber);
+
+                if (!blue1.estop) Console.WriteLine("Press 4 to EStop team {0}", blue1.TeamNumber);
+                else Console.WriteLine("Team {0} has been estopped.", blue1.TeamNumber);
+
+                if (!blue2.estop) Console.WriteLine("Press 5 to EStop team {0}", blue2.TeamNumber);
+                else Console.WriteLine("Team {0} has been estopped.", blue2.TeamNumber);
+
+                if (!blue3.estop) Console.WriteLine("Press 6 to EStop team {0}", blue3.TeamNumber);
+                else Console.WriteLine("Team {0} has been estopped.", blue3.TeamNumber);
+
                 Thread.Sleep(1000);
                 TimeLeftInPhase--;
             }
@@ -292,6 +310,24 @@ namespace PFMS
                 Console.WriteLine("Game Strings: Red: {0} Blue: {1}", redGameString, blueGameString);
                 Console.WriteLine();
                 Console.WriteLine("Press Enter to EStop the match.");
+
+                if (!red1.estop) Console.WriteLine("Press 1 to EStop team {0}", red1.TeamNumber);
+                else Console.WriteLine("Team {0} has been estopped.", red1.TeamNumber);
+
+                if (!red2.estop) Console.WriteLine("Press 2 to EStop team {0}", red2.TeamNumber);
+                else Console.WriteLine("Team {0} has been estopped.", red2.TeamNumber);
+
+                if (!red3.estop) Console.WriteLine("Press 3 to EStop team {0}", red3.TeamNumber);
+                else Console.WriteLine("Team {0} has been estopped.", red3.TeamNumber);
+
+                if (!blue1.estop) Console.WriteLine("Press 4 to EStop team {0}", blue1.TeamNumber);
+                else Console.WriteLine("Team {0} has been estopped.", blue1.TeamNumber);
+
+                if (!blue2.estop) Console.WriteLine("Press 5 to EStop team {0}", blue2.TeamNumber);
+                else Console.WriteLine("Team {0} has been estopped.", blue2.TeamNumber);
+
+                if (!blue3.estop) Console.WriteLine("Press 6 to EStop team {0}", blue3.TeamNumber);
+                else Console.WriteLine("Team {0} has been estopped.", blue3.TeamNumber);
 
                 Thread.Sleep(1000);
                 TimeLeftInPhase--;
@@ -316,7 +352,7 @@ namespace PFMS
             Console.ReadKey(true);
             System.Environment.Exit(0);
         }
-
+        
         static void dsConnectThread()
         {
             TcpListener dsListener = new TcpListener(FMSIp, 1750);
@@ -334,53 +370,58 @@ namespace PFMS
             }
             Console.WriteLine("Listening for driver stations on {0} on port {1}", FMSIp.ToString(), 1750);
 
-            while (true)
+            while (Arena.currentGamePhase == GamePhase.PREMATCH)
             {
-                TcpClient tcpClient = dsListener.AcceptTcpClient();
-
-                byte[] buffer = new byte[5];
-                tcpClient.GetStream().Read(buffer, 0, buffer.Length);
-
-                if (!(buffer[0] == 0 && buffer[1] == 3 && buffer[2] == 24))
+                if (currentGamePhase == GamePhase.PREMATCH)
                 {
-                    tcpClient.Close();
-                    Console.WriteLine("Bad connection");
-                    continue;
+                    TcpClient tcpClient = dsListener.AcceptTcpClient();
+
+                    byte[] buffer = new byte[5];
+                    tcpClient.GetStream().Read(buffer, 0, buffer.Length);
+
+                    if (!(buffer[0] == 0 && buffer[1] == 3 && buffer[2] == 24))
+                    {
+                        tcpClient.Close();
+                        Console.WriteLine("Bad connection");
+                        continue;
+                    }
+
+                    int teamId_1 = (int)buffer[3] << 8;
+                    int teamId_2 = buffer[4];
+                    int teamId = teamId_1 | teamId_2;
+
+                    int allianceStation = -1;
+                    string ip = tcpClient.Client.RemoteEndPoint.ToString().Split(':')[0];
+                    IPAddress dsIp = IPAddress.Parse(ip);
+                    if (red1.TeamNumber == teamId) { allianceStation = 0; red1.setDsConnection(dsIp, tcpClient); }
+                    else if (red2.TeamNumber == teamId) { allianceStation = 1; red2.setDsConnection(dsIp, tcpClient); }
+                    else if (red3.TeamNumber == teamId) { allianceStation = 2; red3.setDsConnection(dsIp, tcpClient); }
+                    else if (blue1.TeamNumber == teamId) { allianceStation = 3; blue1.setDsConnection(dsIp, tcpClient); }
+                    else if (blue2.TeamNumber == teamId) { allianceStation = 4; blue2.setDsConnection(dsIp, tcpClient); }
+                    else if (blue3.TeamNumber == teamId) { allianceStation = 5; blue3.setDsConnection(dsIp, tcpClient); }
+
+                    if (allianceStation == -1)
+                    {
+                        Console.WriteLine("Driver Station from team {0} attempted to connect, but they are not in this match!", teamId);
+                        tcpClient.Close();
+                        continue;
+                    }
+
+                    Console.WriteLine("Team {0} has connected their driver station!", teamId);
+
+                    //byte knowledge from Team 254's Cheesy Arena.
+                    byte[] assignmentPacket = new byte[5];
+                    assignmentPacket[0] = 0; //Size
+                    assignmentPacket[1] = 3; //Size
+                    assignmentPacket[2] = 25; //Type
+                    assignmentPacket[3] = (byte)allianceStation; //allianceStation
+                    assignmentPacket[4] = 0; //Station Status, I currently do not have checks for correct station, since there is no vlan.
+
+                    tcpClient.GetStream().Write(assignmentPacket, 0, assignmentPacket.Length);
                 }
-
-                int teamId_1 = (int)buffer[3] << 8;
-                int teamId_2 = buffer[4];
-                int teamId = teamId_1 | teamId_2;
-
-                int allianceStation = -1;
-                string ip = tcpClient.Client.RemoteEndPoint.ToString().Split(':')[0];
-                IPAddress dsIp = IPAddress.Parse(ip);
-                if (red1.TeamNumber == teamId) { allianceStation = 0; red1.setDsConnection(dsIp, tcpClient); }
-                else if (red2.TeamNumber == teamId) { allianceStation = 1; red2.setDsConnection(dsIp, tcpClient); }
-                else if (red3.TeamNumber == teamId) { allianceStation = 2; red3.setDsConnection(dsIp, tcpClient); }
-                else if (blue1.TeamNumber == teamId) { allianceStation = 3; blue1.setDsConnection(dsIp, tcpClient); }
-                else if (blue2.TeamNumber == teamId) { allianceStation = 4; blue2.setDsConnection(dsIp, tcpClient); }
-                else if (blue3.TeamNumber == teamId) { allianceStation = 5; blue3.setDsConnection(dsIp, tcpClient); }
-
-                if (allianceStation == -1)
-                {
-                    Console.WriteLine("Driver Station from team {0} attempted to connect, but they are not in this match!", teamId);
-                    tcpClient.Close();
-                    continue;
-                }
-
-                Console.WriteLine("Team {0} has connected their driver station!", teamId);
-
-                //byte knowledge from Team 254's Cheesy Arena.
-                byte[] assignmentPacket = new byte[5];
-                assignmentPacket[0] = 0; //Size
-                assignmentPacket[1] = 3; //Size
-                assignmentPacket[2] = 25; //Type
-                assignmentPacket[3] = (byte)allianceStation; //allianceStation
-                assignmentPacket[4] = 0; //Station Status, I currently do not have checks for correct station, since there is no vlan.
-
-                tcpClient.GetStream().Write(assignmentPacket, 0, assignmentPacket.Length);
+                //else Console.WriteLine("What IS HAPPENING.");
             }
+            dsListener.Stop();
         }
     }
 }
