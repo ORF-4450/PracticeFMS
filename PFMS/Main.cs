@@ -460,23 +460,40 @@ namespace PFMS
                                 break;
 
                             default:
-                                string response = "<html><head><title>Estop Request</title></head><body><h1>Click a team to Estop them</h1>";
+                                string response3 = "<html><head><title>Estop Request</title></head><body><h1>Click a team to Estop them</h1>";
                                 foreach (DriverStation ds in redAlliance)
                                 {
-                                    response += "<p/><a href='red/" + ds.stationId + "' target='_blank'>Red " + ds.stationId + ": Team " + ds.TeamNumber + "</a><p/>";
+                                    response3 += "<p/><a href='red/" + ds.stationId + "' target='_blank'>Red " + ds.stationId + ": Team " + ds.TeamNumber + "</a><p/>";
                                 }
                                 foreach (DriverStation ds in blueAlliance)
                                 {
-                                    response += "<p/><a href='blue/" + ds.stationId + "' target='_blank'>Blue " + ds.stationId + ": Team " + ds.TeamNumber + "</a><p/>";
+                                    response3 += "<p/><a href='blue/" + ds.stationId + "' target='_blank'>Blue " + ds.stationId + ": Team " + ds.TeamNumber + "</a><p/>";
                                 }
-                                byte[] buffer = System.Text.Encoding.UTF8.GetBytes(response);
-                                context.Response.ContentLength64 = buffer.LongLength;
-                                context.Response.OutputStream.Write(buffer, 0, buffer.Length);
+                                byte[] buffer3 = System.Text.Encoding.UTF8.GetBytes(response3);
+                                context.Response.ContentLength64 = buffer3.LongLength;
+                                context.Response.OutputStream.Write(buffer3, 0, buffer3.Length);
                                 context.Response.OutputStream.Close();
                                 context.Response.Close();
                                 break;
 
                         }
+                        break;
+
+                    default:
+                        string response = "<html><head><title>Main page</title></head><body><h1>Welcome to the PracticeFMS Web Interface</h1><p/><h2>Current Robot Status:</h2></p>";
+                        foreach (DriverStation ds in redAlliance)
+                        {
+                            response += "<p>" + ds.ToString() + "<p/>";
+                        }
+                        foreach (DriverStation ds in blueAlliance)
+                        {
+                            response += "<p>" + ds.ToString() + "<p/>";
+                        }
+                        byte[] buffer = System.Text.Encoding.UTF8.GetBytes(response);
+                        context.Response.ContentLength64 = buffer.LongLength;
+                        context.Response.OutputStream.Write(buffer, 0, buffer.Length);
+                        context.Response.OutputStream.Close();
+                        context.Response.Close();
                         break;
                 }
             }
