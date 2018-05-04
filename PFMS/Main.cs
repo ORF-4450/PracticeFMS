@@ -100,6 +100,7 @@ namespace PFMS
                 System.Environment.Exit(0);
             }
 
+            httpListener.Prefixes.Add("http://"+ FMSIp.ToString() +"/PracticeFMS/");
             httpListener.Prefixes.Add("http://localhost/PracticeFMS/");
             try
             {
@@ -480,15 +481,18 @@ namespace PFMS
                         break;
 
                     default:
-                        string response = "<html><head><title>Main page</title></head><body><h1>Welcome to the PracticeFMS Web Interface</h1><p/><h2>Current Robot Status:</h2></p>";
+                        string response = "<html><head><title>Main page</title><style>table, td, tr {border: 1px solid black; } td, tr { padding: 10px; } </style></head><body><h1>Welcome to the PracticeFMS Web Interface</h1><p/><h2>Current Robot Status:</h2></p>";
+                        response += "<p>";
                         foreach (DriverStation ds in redAlliance)
                         {
-                            response += "<p>" + ds.ToString() + "<p/>";
+                            response += ds.toHTMLTable();
                         }
+                        response += "</p><p>";
                         foreach (DriverStation ds in blueAlliance)
                         {
-                            response += "<p>" + ds.ToString() + "<p/>";
+                            response += ds.toHTMLTable();
                         }
+                        response += "</p><p><a href=''>Refresh Data</a></body></html>";
                         byte[] buffer = System.Text.Encoding.UTF8.GetBytes(response);
                         context.Response.ContentLength64 = buffer.LongLength;
                         context.Response.OutputStream.Write(buffer, 0, buffer.Length);

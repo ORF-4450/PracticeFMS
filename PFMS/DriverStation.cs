@@ -121,6 +121,14 @@ namespace PFMS
             return stringToReturn;
         }
 
+        public string toHTMLTable()
+        {
+            if (TeamNumber != 0)
+                return "<table><tbody><tr><td>" + (isRedAlliance() ? "Red" : "Blue") + " " + stationId + ": " + TeamNumber + "</td><td>Driver Station: " + (driverStationIp == null ? "Unregistered" : (isDSConnected ? "Connected" : "Disconnected")) + "</td></tr><tr><td>Robot Radio: " + (isRobotRadioConnected ? "Connected" : "Disconnected") + "</td><td> RoboRio: " + (isRoboRioConnected ? "Connected" : "Disconnected") + "</td></tr><tr><td colspan='2'>" + (!estop ? "<a href='estop/" + (isRedAlliance() ? "red" : "blue") + "/" + stationId + "' target='_blank'>Estop this robot</a>" : "This robot has been estopped" ) + "</td></tr></tbody></table>";
+            else
+                return "<table><tbody><tr><td>" + (isRedAlliance() ? "Red" : "Blue") + " " + stationId + ": BYPASSED</td></tbody></table>";
+        }
+
         public bool isRedAlliance() { return (allianceStation == AllianceStations.RED1 || allianceStation == AllianceStations.RED2 || allianceStation == AllianceStations.RED3); }
 
         public bool readyForMatchStart()
