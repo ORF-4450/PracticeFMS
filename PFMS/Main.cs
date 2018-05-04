@@ -8,6 +8,7 @@ using System.Net.Sockets;
 using System.Net.NetworkInformation;
 using System.Threading;
 using System.IO;
+using System.Diagnostics;
 
 namespace PFMS
 {
@@ -28,6 +29,8 @@ namespace PFMS
         static Dictionary<string, int> options = new Dictionary<string, int>();
 
         static IPAddress FMSIp = IPAddress.Parse("10.00.100.5");
+
+        static public HttpListener httpListener = new HttpListener();
 
         public enum AllianceStations { RED1, RED2, RED3, BLUE1, BLUE2, BLUE3 }
 
@@ -89,6 +92,25 @@ namespace PFMS
 
         static void Main(string[] args)
         {
+
+            if (!HttpListener.IsSupported)
+            {
+                Console.WriteLine("Windows XP SP3 or greater required.");
+                Console.ReadLine();
+                System.Environment.Exit(0);
+            }
+
+            httpListener.Prefixes.Add("http://localhost/PracticeFMS/");
+            try
+            {
+                httpListener.Start();
+            } catch
+            {
+                var startInfo = new ProcessStartInfo("PFMS.exe") { Verb = "runas" };
+                Process.Start(startInfo);
+                Environment.Exit(0);
+            }
+
             //Welcome Message
             Console.Clear();
             Console.WriteLine("Welcome to the unoffical practice FMS Version {0}", version);
@@ -156,6 +178,10 @@ namespace PFMS
             ThreadStart dsConnectThreadRef = new ThreadStart(dsConnectThread);
             Thread dsConnectThreadObj = new Thread(dsConnectThreadRef);
             dsConnectThreadObj.Start();
+
+            ThreadStart httpListenThreadRef = new ThreadStart(httpListenThread);
+            Thread httpListenThreadObj = new Thread(httpListenThreadRef);
+            httpListenThreadObj.Start();
 
             Thread.Sleep(200);
             if (estop) return;
@@ -394,6 +420,66 @@ namespace PFMS
                 tcpClient.GetStream().Write(assignmentPacket, 0, assignmentPacket.Length);
             }
             dsListener.Stop();
+        }
+
+        static void httpListenThread()
+        {
+            while (true)
+            {
+                HttpListenerContext context = httpListener.GetContext();
+                string[] urlParts = context.Request.RawUrl.Split('/');
+                switch (urlParts[2].ToLower())
+                {
+                    case "estop":
+                        switch (urlParts[3].ToLower())
+                        {
+                            case "red":
+                                if (redAlliance[int.Parse(urlParts[4]) - 1] != null)
+                                {
+                                    redAlliance[int.Parse(urlParts[4]) - 1].estop = true;
+                                    string response1 = "<html><head><title>Estop Request</title></head><body><h1>Team " + redAlliance[int.Parse(urlParts[4]) - 1].TeamNumber + " has been EStopped.</h1></body></html>";
+                                    byte[] buffer1 = System.Text.Encoding.UTF8.GetBytes(response1);
+                                    context.Response.ContentLength64 = buffer1.Length;
+                                    context.Response.OutputStream.Write(buffer1, 0, buffer1.Length);
+                                    context.Response.OutputStream.Close();
+                                    context.Response.Close();
+                                }
+                                break;
+
+                            case "blue":
+                                if (blueAlliance[int.Parse(urlParts[4]) - 1] != null)
+                                {
+                                    blueAlliance[int.Parse(urlParts[4]) - 1].estop = true;
+                                    string response2 = "<html><head><title>Estop Request</title></head><body><h1>Team " + blueAlliance[int.Parse(urlParts[4]) - 1].TeamNumber + " has been EStopped.</h1></body></html>";
+                                    byte[] buffer2 = System.Text.Encoding.UTF8.GetBytes(response2);
+                                    context.Response.ContentLength64 = buffer2.LongLength;
+                                    context.Response.OutputStream.Write(buffer2, 0, buffer2.Length);
+                                    context.Response.OutputStream.Close();
+                                    context.Response.Close();
+                                }
+                                break;
+
+                            default:
+                                string response = "<html><head><title>Estop Request</title></head><body><h1>Click a team to Estop them</h1>";
+                                foreach (DriverStation ds in redAlliance)
+                                {
+                                    response += "<p/><a href='red/" + ds.stationId + "' target='_blank'>Red " + ds.stationId + ": Team " + ds.TeamNumber + "</a><p/>";
+                                }
+                                foreach (DriverStation ds in blueAlliance)
+                                {
+                                    response += "<p/><a href='blue/" + ds.stationId + "' target='_blank'>Blue " + ds.stationId + ": Team " + ds.TeamNumber + "</a><p/>";
+                                }
+                                byte[] buffer = System.Text.Encoding.UTF8.GetBytes(response);
+                                context.Response.ContentLength64 = buffer.LongLength;
+                                context.Response.OutputStream.Write(buffer, 0, buffer.Length);
+                                context.Response.OutputStream.Close();
+                                context.Response.Close();
+                                break;
+
+                        }
+                        break;
+                }
+            }
         }
     }
 }
