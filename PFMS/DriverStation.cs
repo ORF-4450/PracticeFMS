@@ -125,7 +125,7 @@ namespace PFMS
 
         public bool readyForMatchStart()
         {
-            return (driverStationIp != null && isDSConnected /* && isRoboRioConnected */) || TeamNumber == 0;
+            return (driverStationIp != null && isDSConnected && isRoboRioConnected) || TeamNumber == 0;
         }
 
         byte[] generateDriverStationControlPacket()

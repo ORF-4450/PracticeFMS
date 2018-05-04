@@ -45,7 +45,7 @@ Make sure every Driver Station is connected to the network, and press enter when
 When prompted, press Enter to start a match countdown and to trigger sending the Game Specific String to the Driver Stations. The match will then run like normal, with the defaults of a 3-second countdown, followed by a 15 second Autonomous period, followed by a 3-second pause, followed by 135 seconds of Teleoperated period.
 
 ## Step 5: (Optional) E-stop a robot or the whole match.
-If the need arises that a robot needs to be E-stopped, there is a designated keyboard key for E-stopping each robot on the field. (These are all in the number row)
+If the need arises that a robot needs to be E-stopped, there is a designated keyboard key for E-stopping each robot on the field. (These are all in the number row, and based off the default configuration, check the console window during a match to see the keys for your specific configuration)
 
 | Red 1 | Red 2 | Red 3 | Blue 1 | Blue 2 | Blue 3 |
 |---|---|---|---|---|---|
