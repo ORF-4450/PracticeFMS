@@ -13,14 +13,16 @@ namespace PFMS
 {
     class Arena
     {
-        public const string version = "2018.1.0.1"; //Syntax: Year.Major.Minor.Revision
+        public const string version = "2018.1.1.0"; //Syntax: Year.Major.Minor.Revision
 
         static string[] defaultOptions = new string[] {
             "AutonomousTime:15",
             "TeleoperatedTime:135",
             "CountdownTime:3",
             "PauseTime:3",
-            "GameStringOverride:-1"
+            "GameStringOverride:-1",
+            "RedAllianceCount:3",
+            "BlueAllianceCount:3"
         };
 
         static Dictionary<string, int> options = new Dictionary<string, int>();
@@ -29,12 +31,8 @@ namespace PFMS
 
         public enum AllianceStations { RED1, RED2, RED3, BLUE1, BLUE2, BLUE3 }
 
-        static DriverStation red1;
-        static DriverStation red2;
-        static DriverStation red3;
-        static DriverStation blue1;
-        static DriverStation blue2;
-        static DriverStation blue3;
+        static DriverStation[] redAlliance;
+        static DriverStation[] blueAlliance;
 
         public static bool estop = false;
 
@@ -68,46 +66,23 @@ namespace PFMS
 
         static bool readyForMatchStart()
         {
-            if (!red1.readyForMatchStart() || !red2.readyForMatchStart() || !red3.readyForMatchStart()) { return false; }
-            if (!blue1.readyForMatchStart() || !blue2.readyForMatchStart() || !blue3.readyForMatchStart()) { return false; }
+            foreach(DriverStation ds in redAlliance) { if (!ds.readyForMatchStart()) return false; }
+            foreach (DriverStation ds in blueAlliance) { if (!ds.readyForMatchStart()) return false; }
 
             return true;
         }
 
+        public static List<ConsoleKey> estopkeyList = new List<ConsoleKey>() { ConsoleKey.D1, ConsoleKey.D2, ConsoleKey.D3, ConsoleKey.D4, ConsoleKey.D5, ConsoleKey.D6, ConsoleKey.D7, ConsoleKey.D8, ConsoleKey.D9, ConsoleKey.D0, ConsoleKey.Q, ConsoleKey.W, ConsoleKey.E, ConsoleKey.R, ConsoleKey.T, ConsoleKey.Y, ConsoleKey.U, ConsoleKey.I, ConsoleKey.O, ConsoleKey.P, ConsoleKey.A, ConsoleKey.S, ConsoleKey.D, ConsoleKey.F, ConsoleKey.G, ConsoleKey.H, ConsoleKey.J, ConsoleKey.K, ConsoleKey.L, ConsoleKey.Z, ConsoleKey.X, ConsoleKey.C, ConsoleKey.V, ConsoleKey.B, ConsoleKey.N, ConsoleKey.M };
+        public static Dictionary<ConsoleKey, DriverStation> estopDsDict = new Dictionary<ConsoleKey, DriverStation>();
         static void eStopThread()
         {
             while (currentGamePhase != GamePhase.POSTMATCH && !estop)
             {
                 ConsoleKeyInfo keyInfo = Console.ReadKey(true);
-                switch (keyInfo.Key)
+                if (keyInfo.Key == ConsoleKey.Enter) estop = true;
+                else if (estopDsDict.ContainsKey(keyInfo.Key))
                 {
-                    case ConsoleKey.Enter:
-                        estop = true;
-                        break;
-
-                    case ConsoleKey.D1:
-                        if (red1 != null) red1.estop = true;
-                        break;
-
-                    case ConsoleKey.D2:
-                        if (red2 != null) red2.estop = true;
-                        break;
-
-                    case ConsoleKey.D3:
-                        if (red3 != null) red3.estop = true;
-                        break;
-
-                    case ConsoleKey.D4:
-                        if (blue1 != null) blue1.estop = true;
-                        break;
-
-                    case ConsoleKey.D5:
-                        if (blue2 != null) blue2.estop = true;
-                        break;
-
-                    case ConsoleKey.D6:
-                        if (blue3 != null) blue3.estop = true;
-                        break;
+                    estopDsDict[keyInfo.Key].estop = true;
                 }
             }
         }
@@ -150,25 +125,22 @@ namespace PFMS
             }
 
             // Team Selection
+            redAlliance = new DriverStation[options["RedAllianceCount"]];
+            blueAlliance = new DriverStation[options["BlueAllianceCount"]];
             Console.WriteLine();
             Console.WriteLine();
-            Console.Write("Enter a team number for the Red 1 driver station: ");
-            red1 = new DriverStation(Console.ReadLine(), AllianceStations.RED1);
-            Console.WriteLine();
-            Console.Write("Enter a team number for the Red 2 driver station: ");
-            red2 = new DriverStation(Console.ReadLine(), AllianceStations.RED2);
-            Console.WriteLine();
-            Console.Write("Enter a team number for the Red 3 driver station: ");
-            red3 = new DriverStation(Console.ReadLine(), AllianceStations.RED3);
-            Console.WriteLine();
-            Console.Write("Enter a team number for the Blue 1 driver station: ");
-            blue1 = new DriverStation(Console.ReadLine(), AllianceStations.BLUE1);
-            Console.WriteLine();
-            Console.Write("Enter a team number for the Blue 2 driver station: ");
-            blue2 = new DriverStation(Console.ReadLine(), AllianceStations.BLUE2);
-            Console.WriteLine();
-            Console.Write("Enter a team number for the Blue 3 driver station: ");
-            blue3 = new DriverStation(Console.ReadLine(), AllianceStations.BLUE3);
+            for (int i = 0; i < redAlliance.Length; i++)
+            {
+                Console.Write("Enter a team number for the Red " + (i+1) + " driver station: ");
+                redAlliance[i] = new DriverStation(Console.ReadLine(), true, i+1);
+                Console.WriteLine();
+            }
+            for (int i = 0; i < blueAlliance.Length; i++)
+            {
+                Console.Write("Enter a team number for the Blue " + (i + 1) + " driver station: ");
+                blueAlliance[i] = new DriverStation(Console.ReadLine(), false, i + 1);
+                Console.WriteLine();
+            }
 
             //2018 Specific Game String Generation
             Console.WriteLine();
@@ -180,11 +152,14 @@ namespace PFMS
             Console.ReadLine();
 
             Console.WriteLine("Now waiting for driver stations to connect.");
-            //TODO THIS LOOP CHECK CHEESY ARENA
+
             ThreadStart dsConnectThreadRef = new ThreadStart(dsConnectThread);
             Thread dsConnectThreadObj = new Thread(dsConnectThreadRef);
             dsConnectThreadObj.Start();
 
+            Thread.Sleep(200);
+            if (estop) return;
+            
             while (!readyForMatchStart())
             {
                 currentGamePhase = GamePhase.PREMATCH;
@@ -192,32 +167,32 @@ namespace PFMS
                 Console.WriteLine("Field Status: PreMatch (Waiting on driver stations and robots to connect)");
                 Console.WriteLine();
                 Console.WriteLine("Current Team Statuses:");
-                Console.WriteLine(red1.ToString());
-                Console.WriteLine(red2.ToString());
-                Console.WriteLine(red3.ToString());
-                Console.WriteLine(blue1.ToString());
-                Console.WriteLine(blue2.ToString());
-                Console.WriteLine(blue3.ToString());
+                foreach (DriverStation ds in redAlliance) if (ds.TeamNumber != 0) Console.WriteLine(ds.ToString());
+                foreach (DriverStation ds in blueAlliance) if (ds.TeamNumber != 0) Console.WriteLine(ds.ToString());
                 Thread.Sleep(500);
             }
 
+            string teamsParticipatingString = "Teams Participating: ";
+            List<DriverStation> nonZeroTeams = new List<DriverStation>();
+            foreach (DriverStation ds in redAlliance) if (ds.TeamNumber != 0) nonZeroTeams.Add(ds);
+            foreach (DriverStation ds in blueAlliance) if (ds.TeamNumber != 0) nonZeroTeams.Add(ds);
+
+            for (int i = 0; i < nonZeroTeams.Count - 1; i++) teamsParticipatingString += blueAlliance[i].TeamNumber + ", ";
+            teamsParticipatingString += " " + nonZeroTeams[nonZeroTeams.Count - 1].TeamNumber;
+
             Console.Clear();
             Console.WriteLine("Field Status: PreMatch (Ready)");
-            Console.WriteLine("Teams Participating: " + red1.TeamNumber + ", " + red2.TeamNumber + ", " + red3.TeamNumber + ", " + blue1.TeamNumber + ", " + blue2.TeamNumber + ", and " + blue3.TeamNumber);
+            Console.WriteLine(teamsParticipatingString);
             Console.WriteLine();
             Console.WriteLine("Press Enter to start the match.");
             Console.ReadLine();
 
-            red1.sendGameStringPacket();
-            red2.sendGameStringPacket();
-            red3.sendGameStringPacket();
-            blue1.sendGameStringPacket();
-            blue2.sendGameStringPacket();
-            blue3.sendGameStringPacket();
-            
+            foreach (DriverStation ds in redAlliance) ds.sendGameStringPacket();
+            foreach (DriverStation ds in blueAlliance) ds.sendGameStringPacket();
+
             Console.Clear();
             Console.WriteLine("Field Status: Countdown");
-            Console.WriteLine("Teams Participating: " + red1.TeamNumber + ", " + red2.TeamNumber + ", " + red3.TeamNumber + ", " + blue1.TeamNumber + ", " + blue2.TeamNumber + ", and " + blue3.TeamNumber);
+            Console.WriteLine(teamsParticipatingString);
             TimeLeftInPhase = options["CountdownTime"];
             Console.WriteLine("Match Begins in " + TimeLeftInPhase + " seconds.");
             Console.WriteLine();
@@ -239,29 +214,25 @@ namespace PFMS
             {
                 Console.Clear();
                 Console.WriteLine("Field Status: Autonomous");
-                Console.WriteLine("Teams Participating: " + red1.TeamNumber + ", " + red2.TeamNumber + ", " + red3.TeamNumber + ", " + blue1.TeamNumber + ", " + blue2.TeamNumber + ", and " + blue3.TeamNumber);
+                Console.WriteLine(teamsParticipatingString);
                 Console.WriteLine("{0} seconds remain in Autonomous.", TimeLeftInPhase);
                 Console.WriteLine();
                 Console.WriteLine("Press Enter to EStop the match.");
 
-                if (!red1.estop) Console.WriteLine("Press 1 to EStop team {0}", red1.TeamNumber);
-                else Console.WriteLine("Team {0} has been estopped.", red1.TeamNumber);
+                foreach (DriverStation ds in redAlliance)
+                {
+                    if (ds.TeamNumber == 0) continue;
+                    if (!ds.estop) Console.WriteLine("Press {0} to EStop team {1}", ds.estopKey, ds.TeamNumber);
+                    else Console.WriteLine("Team {0} has been estopped.", ds.TeamNumber);
+                }
 
-                if (!red2.estop) Console.WriteLine("Press 2 to EStop team {0}", red2.TeamNumber);
-                else Console.WriteLine("Team {0} has been estopped.", red2.TeamNumber);
-
-                if (!red3.estop) Console.WriteLine("Press 3 to EStop team {0}", red3.TeamNumber);
-                else Console.WriteLine("Team {0} has been estopped.", red3.TeamNumber);
-
-                if (!blue1.estop) Console.WriteLine("Press 4 to EStop team {0}", blue1.TeamNumber);
-                else Console.WriteLine("Team {0} has been estopped.", blue1.TeamNumber);
-
-                if (!blue2.estop) Console.WriteLine("Press 5 to EStop team {0}", blue2.TeamNumber);
-                else Console.WriteLine("Team {0} has been estopped.", blue2.TeamNumber);
-
-                if (!blue3.estop) Console.WriteLine("Press 6 to EStop team {0}", blue3.TeamNumber);
-                else Console.WriteLine("Team {0} has been estopped.", blue3.TeamNumber);
-
+                foreach (DriverStation ds in blueAlliance)
+                {
+                    if (ds.TeamNumber == 0) continue;
+                    if (!ds.estop) Console.WriteLine("Press {0} to EStop team {1}", ds.estopKey, ds.TeamNumber);
+                    else Console.WriteLine("Team {0} has been estopped.", ds.TeamNumber);
+                }
+                
                 Thread.Sleep(1000);
                 TimeLeftInPhase--;
             }
@@ -272,28 +243,24 @@ namespace PFMS
             {
                 Console.Clear();
                 Console.WriteLine("Field Status: Pause between Autonomous and Teloperated");
-                Console.WriteLine("Teams Participating: " + red1.TeamNumber + ", " + red2.TeamNumber + ", " + red3.TeamNumber + ", " + blue1.TeamNumber + ", " + blue2.TeamNumber + ", and " + blue3.TeamNumber);
+                Console.WriteLine(teamsParticipatingString);
                 Console.WriteLine("{0} seconds remain in Pause.", TimeLeftInPhase);
                 Console.WriteLine();
                 Console.WriteLine("Press Enter to EStop the match.");
 
-                if (!red1.estop) Console.WriteLine("Press 1 to EStop team {0}", red1.TeamNumber);
-                else Console.WriteLine("Team {0} has been estopped.", red1.TeamNumber);
+                foreach (DriverStation ds in redAlliance)
+                {
+                    if (ds.TeamNumber == 0) continue;
+                    if (!ds.estop) Console.WriteLine("Press {0} to EStop team {1}", ds.estopKey, ds.TeamNumber);
+                    else Console.WriteLine("Team {0} has been estopped.", ds.TeamNumber);
+                }
 
-                if (!red2.estop) Console.WriteLine("Press 2 to EStop team {0}", red2.TeamNumber);
-                else Console.WriteLine("Team {0} has been estopped.", red2.TeamNumber);
-
-                if (!red3.estop) Console.WriteLine("Press 3 to EStop team {0}", red3.TeamNumber);
-                else Console.WriteLine("Team {0} has been estopped.", red3.TeamNumber);
-
-                if (!blue1.estop) Console.WriteLine("Press 4 to EStop team {0}", blue1.TeamNumber);
-                else Console.WriteLine("Team {0} has been estopped.", blue1.TeamNumber);
-
-                if (!blue2.estop) Console.WriteLine("Press 5 to EStop team {0}", blue2.TeamNumber);
-                else Console.WriteLine("Team {0} has been estopped.", blue2.TeamNumber);
-
-                if (!blue3.estop) Console.WriteLine("Press 6 to EStop team {0}", blue3.TeamNumber);
-                else Console.WriteLine("Team {0} has been estopped.", blue3.TeamNumber);
+                foreach (DriverStation ds in blueAlliance)
+                {
+                    if (ds.TeamNumber == 0) continue;
+                    if (!ds.estop) Console.WriteLine("Press {0} to EStop team {1}", ds.estopKey, ds.TeamNumber);
+                    else Console.WriteLine("Team {0} has been estopped.", ds.TeamNumber);
+                }
 
                 Thread.Sleep(1000);
                 TimeLeftInPhase--;
@@ -305,29 +272,25 @@ namespace PFMS
             {
                 Console.Clear();
                 Console.WriteLine("Field Status: Teleoperated");
-                Console.WriteLine("Teams Participating: " + red1.TeamNumber + ", " + red2.TeamNumber + ", " + red3.TeamNumber + ", " + blue1.TeamNumber + ", " + blue2.TeamNumber + ", and " + blue3.TeamNumber);
+                Console.WriteLine(teamsParticipatingString);
                 Console.WriteLine("{0} seconds remain in Teleoperated.", TimeLeftInPhase);
                 Console.WriteLine("Game Strings: Red: {0} Blue: {1}", redGameString, blueGameString);
                 Console.WriteLine();
                 Console.WriteLine("Press Enter to EStop the match.");
 
-                if (!red1.estop) Console.WriteLine("Press 1 to EStop team {0}", red1.TeamNumber);
-                else Console.WriteLine("Team {0} has been estopped.", red1.TeamNumber);
+                foreach (DriverStation ds in redAlliance)
+                {
+                    if (ds.TeamNumber == 0) continue;
+                    if (!ds.estop) Console.WriteLine("Press {0} to EStop team {1}", ds.estopKey, ds.TeamNumber);
+                    else Console.WriteLine("Team {0} has been estopped.", ds.TeamNumber);
+                }
 
-                if (!red2.estop) Console.WriteLine("Press 2 to EStop team {0}", red2.TeamNumber);
-                else Console.WriteLine("Team {0} has been estopped.", red2.TeamNumber);
-
-                if (!red3.estop) Console.WriteLine("Press 3 to EStop team {0}", red3.TeamNumber);
-                else Console.WriteLine("Team {0} has been estopped.", red3.TeamNumber);
-
-                if (!blue1.estop) Console.WriteLine("Press 4 to EStop team {0}", blue1.TeamNumber);
-                else Console.WriteLine("Team {0} has been estopped.", blue1.TeamNumber);
-
-                if (!blue2.estop) Console.WriteLine("Press 5 to EStop team {0}", blue2.TeamNumber);
-                else Console.WriteLine("Team {0} has been estopped.", blue2.TeamNumber);
-
-                if (!blue3.estop) Console.WriteLine("Press 6 to EStop team {0}", blue3.TeamNumber);
-                else Console.WriteLine("Team {0} has been estopped.", blue3.TeamNumber);
+                foreach (DriverStation ds in blueAlliance)
+                {
+                    if (ds.TeamNumber == 0) continue;
+                    if (!ds.estop) Console.WriteLine("Press {0} to EStop team {1}", ds.estopKey, ds.TeamNumber);
+                    else Console.WriteLine("Team {0} has been estopped.", ds.TeamNumber);
+                }
 
                 Thread.Sleep(1000);
                 TimeLeftInPhase--;
@@ -339,12 +302,8 @@ namespace PFMS
             Console.WriteLine("Field Status: Match Complete");
             Console.WriteLine();
             Console.WriteLine("Cleaning up.");
-            red1.dispose();
-            red2.dispose();
-            red3.dispose();
-            blue1.dispose();
-            blue2.dispose();
-            blue3.dispose();
+            foreach (DriverStation ds in redAlliance) ds.dispose();
+            foreach (DriverStation ds in blueAlliance) ds.dispose();
             Console.WriteLine("All done! Thank you for using the PFMS by MoSadie.");
             Console.WriteLine("To start another match, just restart this program.");
             Console.WriteLine();
@@ -365,6 +324,7 @@ namespace PFMS
                 Console.WriteLine();
                 Console.WriteLine("Something went wrong while attempting to start connecting driver stations. Please check the network configuration and try again.");
                 Console.WriteLine("Press any key to exit.");
+                Arena.estop = true;
                 Console.ReadKey(true);
                 System.Environment.Exit(0);
             }
@@ -372,54 +332,66 @@ namespace PFMS
 
             while (Arena.currentGamePhase == GamePhase.PREMATCH)
             {
-                if (currentGamePhase == GamePhase.PREMATCH)
+                TcpClient tcpClient = dsListener.AcceptTcpClient();
+
+                byte[] buffer = new byte[5];
+                tcpClient.GetStream().Read(buffer, 0, buffer.Length);
+
+                if (!(buffer[0] == 0 && buffer[1] == 3 && buffer[2] == 24))
                 {
-                    TcpClient tcpClient = dsListener.AcceptTcpClient();
-
-                    byte[] buffer = new byte[5];
-                    tcpClient.GetStream().Read(buffer, 0, buffer.Length);
-
-                    if (!(buffer[0] == 0 && buffer[1] == 3 && buffer[2] == 24))
-                    {
-                        tcpClient.Close();
-                        Console.WriteLine("Bad connection");
-                        continue;
-                    }
-
-                    int teamId_1 = (int)buffer[3] << 8;
-                    int teamId_2 = buffer[4];
-                    int teamId = teamId_1 | teamId_2;
-
-                    int allianceStation = -1;
-                    string ip = tcpClient.Client.RemoteEndPoint.ToString().Split(':')[0];
-                    IPAddress dsIp = IPAddress.Parse(ip);
-                    if (red1.TeamNumber == teamId) { allianceStation = 0; red1.setDsConnection(dsIp, tcpClient); }
-                    else if (red2.TeamNumber == teamId) { allianceStation = 1; red2.setDsConnection(dsIp, tcpClient); }
-                    else if (red3.TeamNumber == teamId) { allianceStation = 2; red3.setDsConnection(dsIp, tcpClient); }
-                    else if (blue1.TeamNumber == teamId) { allianceStation = 3; blue1.setDsConnection(dsIp, tcpClient); }
-                    else if (blue2.TeamNumber == teamId) { allianceStation = 4; blue2.setDsConnection(dsIp, tcpClient); }
-                    else if (blue3.TeamNumber == teamId) { allianceStation = 5; blue3.setDsConnection(dsIp, tcpClient); }
-
-                    if (allianceStation == -1)
-                    {
-                        Console.WriteLine("Driver Station from team {0} attempted to connect, but they are not in this match!", teamId);
-                        tcpClient.Close();
-                        continue;
-                    }
-
-                    Console.WriteLine("Team {0} has connected their driver station!", teamId);
-
-                    //byte knowledge from Team 254's Cheesy Arena.
-                    byte[] assignmentPacket = new byte[5];
-                    assignmentPacket[0] = 0; //Size
-                    assignmentPacket[1] = 3; //Size
-                    assignmentPacket[2] = 25; //Type
-                    assignmentPacket[3] = (byte)allianceStation; //allianceStation
-                    assignmentPacket[4] = 0; //Station Status, I currently do not have checks for correct station, since there is no vlan.
-
-                    tcpClient.GetStream().Write(assignmentPacket, 0, assignmentPacket.Length);
+                    tcpClient.Close();
+                    Console.WriteLine("Bad connection");
+                    continue;
                 }
-                //else Console.WriteLine("What IS HAPPENING.");
+
+                int teamId_1 = (int)buffer[3] << 8;
+                int teamId_2 = buffer[4];
+                int teamId = teamId_1 | teamId_2;
+
+                int allianceStation = -1;
+                string ip = tcpClient.Client.RemoteEndPoint.ToString().Split(':')[0];
+                IPAddress dsIp = IPAddress.Parse(ip);
+
+                for (int i = 0; i < redAlliance.Length; i++)
+                {
+                    if (redAlliance[i].TeamNumber == teamId)
+                    {
+                        allianceStation = (int)DriverStation.IntToStation((i + 1), true);
+                        redAlliance[i].setDsConnection(dsIp, tcpClient);
+                        break;
+                    }
+                }
+
+                for (int i = 0; i < blueAlliance.Length && allianceStation == -1; i++)
+                {
+                    if (blueAlliance[i].TeamNumber == teamId)
+                    {
+                        allianceStation = (int)DriverStation.IntToStation((i + 1), false);
+                        blueAlliance[i].setDsConnection(dsIp, tcpClient);
+                        break;
+                    }
+                }
+
+                if (currentGamePhase != GamePhase.PREMATCH) break;
+
+                if (allianceStation == -1)
+                {
+                    Console.WriteLine("Driver Station from team {0} attempted to connect, but they are not in this match!", teamId);
+                    tcpClient.Close();
+                    continue;
+                }
+
+                Console.WriteLine("Team {0} has connected their driver station!", teamId);
+
+                //byte knowledge from Team 254's Cheesy Arena.
+                byte[] assignmentPacket = new byte[5];
+                assignmentPacket[0] = 0; //Size
+                assignmentPacket[1] = 3; //Size
+                assignmentPacket[2] = 25; //Type
+                assignmentPacket[3] = (byte)allianceStation; //allianceStation
+                assignmentPacket[4] = 0; //Station Status, I currently do not have checks for correct station, since there is no vlan.
+
+                tcpClient.GetStream().Write(assignmentPacket, 0, assignmentPacket.Length);
             }
             dsListener.Stop();
         }

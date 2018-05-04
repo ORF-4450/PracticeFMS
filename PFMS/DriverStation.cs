@@ -13,8 +13,19 @@ namespace PFMS
 {
     class DriverStation
     {
-        public DriverStation(string teamNumber, AllianceStations allianceStation)
+        public DriverStation(string teamNumber, bool isRedAlliance, int allianceStationNumber)
         {
+            if (Arena.estopkeyList.Count > 0)
+            {
+                estopKey = Arena.estopkeyList[0];
+                Arena.estopkeyList.RemoveAt(0);
+                Arena.estopDsDict.Add(estopKey, this);
+            }
+            else
+            {
+                estopKey = ConsoleKey.Enter;
+            }
+
             if (int.TryParse(teamNumber, out TeamNumber))
             {
                 switch (teamNumber.Length)
@@ -53,11 +64,12 @@ namespace PFMS
             //recieveDataThread = new Thread(recieveDataThreadRef);
             //recieveDataThread.Start();
 
+            this.allianceStation = IntToStation(allianceStationNumber, isRedAlliance);
+            this.stationId = allianceStationNumber;
+
             sendDataThreadRef = new ThreadStart(sendControlDataThread);
             sendDataThread = new Thread(sendDataThreadRef);
             sendDataThread.Start();
-
-            this.allianceStation = allianceStation;
         }
 
         public int TeamNumber;
@@ -69,15 +81,17 @@ namespace PFMS
         public bool isRobotRadioConnected = false;
         public bool isRoboRioConnected = false;
         public AllianceStations allianceStation;
+        public int stationId = -1;
         public int packetCount = 0;
+        public ConsoleKey estopKey;
 
         public bool estop = false;
 
         ThreadStart pingThreadRef;
         Thread pingThread;
 
-        ThreadStart recieveDataThreadRef;
-        Thread recieveDataThread;
+        //ThreadStart recieveDataThreadRef;
+        //Thread recieveDataThread;
 
         ThreadStart sendDataThreadRef;
         Thread sendDataThread;
@@ -102,8 +116,8 @@ namespace PFMS
         public override string ToString()
         {
             string stringToReturn;
-            if (TeamNumber != 0) stringToReturn = allianceStation.ToString() + ": Team Number " + TeamNumber + " DS IP: " + ((driverStationIp == null) ? "Unregistered" : driverStationIp.ToString()) + " EStop: " + estop + " Connection status: DS: " + (isDSConnected ? "Connected" : "Disconnected") + " Radio: " + (isRobotRadioConnected ? "Connected" : "Disconnected") + " Robot: " + (isRoboRioConnected ? "Connected" : "Disconnected");
-            else stringToReturn = allianceStation.ToString() + ": BYPASSED";
+            if (TeamNumber != 0) stringToReturn = (isRedAlliance() ? "Red " : "Blue ") + stationId + ": Team Number " + TeamNumber + " DS IP: " + ((driverStationIp == null) ? "Unregistered" : driverStationIp.ToString()) + " EStop: " + estop + " Connection status: DS: " + (isDSConnected ? "Connected" : "Disconnected") + " Radio: " + (isRobotRadioConnected ? "Connected" : "Disconnected") + " Robot: " + (isRoboRioConnected ? "Connected" : "Disconnected");
+            else stringToReturn = (isRedAlliance() ? "Red " : "Blue ") + stationId + ": BYPASSED";
             return stringToReturn;
         }
 
@@ -111,7 +125,7 @@ namespace PFMS
 
         public bool readyForMatchStart()
         {
-            return (driverStationIp != null && isDSConnected && isRoboRioConnected) || TeamNumber == 0;
+            return (driverStationIp != null && isDSConnected /* && isRoboRioConnected */) || TeamNumber == 0;
         }
 
         byte[] generateDriverStationControlPacket()
@@ -236,6 +250,52 @@ namespace PFMS
                     result = ping.Send(driverStationIp, timeout);
                     isDSConnected = result.Status == IPStatus.Success;
                 }
+            }
+        }
+
+        public static AllianceStations IntToStation(int id, bool redAlliance)
+        {
+            while (id > 3)
+            {
+                id -= 3;
+            }
+            
+            switch (redAlliance)
+            {
+                case true:
+                    switch (id)
+                    {
+                        case 1:
+                            return AllianceStations.RED1;
+
+                        case 2:
+                            return AllianceStations.RED2;
+
+                        case 3:
+                            return AllianceStations.RED3;
+
+                        default:
+                            return AllianceStations.RED1;
+                    }
+
+                case false:
+                    switch (id)
+                    {
+                        case 1:
+                            return AllianceStations.BLUE1;
+
+                        case 2:
+                            return AllianceStations.BLUE2;
+
+                        case 3:
+                            return AllianceStations.BLUE3;
+
+                        default:
+                            return AllianceStations.BLUE1;
+                    }
+
+                default:
+                    return AllianceStations.RED1;
             }
         }
 
