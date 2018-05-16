@@ -124,9 +124,14 @@ namespace PFMS
         public string toHTMLTable()
         {
             if (TeamNumber != 0)
-                return "<table><tbody><tr><td>" + (isRedAlliance() ? "Red" : "Blue") + " " + stationId + ": " + TeamNumber + "</td><td>Driver Station: " + (driverStationIp == null ? "Unregistered" : (isDSConnected ? "Connected" : "Disconnected")) + "</td></tr><tr><td>Robot Radio: " + (isRobotRadioConnected ? "Connected" : "Disconnected") + "</td><td> RoboRio: " + (isRoboRioConnected ? "Connected" : "Disconnected") + "</td></tr><tr><td colspan='2'>" + (!estop ? "<a href='estop/" + (isRedAlliance() ? "red" : "blue") + "/" + stationId + "' target='_blank'>Estop this robot</a>" : "This robot has been estopped" ) + "</td></tr></tbody></table>";
+                return "<table><tbody><tr><td class=\"" + (isRedAlliance() ? "redAlliance" : "blueAlliance") + "\">" + (isRedAlliance() ? "Red" : "Blue") + " " + stationId + ": " + TeamNumber + "</td><td class= \"" + (isDSConnected ? "green" : "red" ) + "\">Driver Station: " + (driverStationIp == null ? "Unregistered" : (isDSConnected ? "Connected" : "Disconnected")) + "</td></tr><tr><td class= \"" + (isRoboRioConnected ? "green" : "red") + "\">Robot Radio: " + (isRobotRadioConnected ? "Connected" : "Disconnected") + "</td><td class= \"" + (isRoboRioConnected ? "green" : "red") + "\"> RoboRio: " + (isRoboRioConnected ? "Connected" : "Disconnected") + "</td></tr><tr><td colspan='2'>" + (!estop ? "<a href='estop/" + (isRedAlliance() ? "red" : "blue") + "/" + stationId + "' target='_blank'>Estop this robot</a>" : "This robot has been estopped" ) + "</td></tr></tbody></table>";
             else
-                return "<table><tbody><tr><td>" + (isRedAlliance() ? "Red" : "Blue") + " " + stationId + ": BYPASSED</td></tbody></table>";
+                return "<table><tbody><tr><td class=\"" + (isRedAlliance() ? "redAlliance" : "blueAlliance") + "\">" + (isRedAlliance() ? "Red" : "Blue") + " " + stationId + ": BYPASSED</td></tbody></table>";
+        }
+
+        public string toJSON()
+        {
+            return "{ \"TeamNumber\":" + TeamNumber + ", \"AllianceColor\": \"" + (isRedAlliance() ? "Red" : "Blue") + "\", \"AllianceStationID\":" + stationId +", \"RobotIP\":\"" + robotIp.ToString() + "\", \"RadioIP\":\"" + radioIp.ToString() + "\", \"DriverStationIP\":\"" + (driverStationIp != null ? driverStationIp.ToString() : "Unregistered") + "\", \"IsDriverStationConnected\":" + isDSConnected.ToString().ToLower() + ", \"IsRoboRioConnected\":" + isRoboRioConnected.ToString().ToLower() + ", \"IsRobotRadioConnected\":" + isRobotRadioConnected.ToString().ToLower() + " }"; //TODO Add more to this 
         }
 
         public bool isRedAlliance() { return (allianceStation == AllianceStations.RED1 || allianceStation == AllianceStations.RED2 || allianceStation == AllianceStations.RED3); }

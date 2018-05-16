@@ -112,6 +112,10 @@ namespace PFMS
                 Environment.Exit(0);
             }
 
+            ThreadStart httpListenThreadRef = new ThreadStart(httpListenThread);
+            Thread httpListenThreadObj = new Thread(httpListenThreadRef);
+            httpListenThreadObj.Start();
+
             //Welcome Message
             Console.Clear();
             Console.WriteLine("Welcome to the unoffical practice FMS Version {0}", version);
@@ -179,10 +183,6 @@ namespace PFMS
             ThreadStart dsConnectThreadRef = new ThreadStart(dsConnectThread);
             Thread dsConnectThreadObj = new Thread(dsConnectThreadRef);
             dsConnectThreadObj.Start();
-
-            ThreadStart httpListenThreadRef = new ThreadStart(httpListenThread);
-            Thread httpListenThreadObj = new Thread(httpListenThreadRef);
-            httpListenThreadObj.Start();
 
             Thread.Sleep(200);
             if (estop) return;
@@ -480,19 +480,23 @@ namespace PFMS
                         }
                         break;
 
+                   // case "json":
+                   //     string response = "{ \"Version\":\"" + version + "\", \"CurrentGamePhase\":\"" + currentGamePhase.ToString() + "\", \"TimeLeftInPhase\":" + TimeLeftInPhase + ", \"RedAllianceGameString\":\""+ redGameString + "\"
+
                     default:
-                        string response = "<html><head><title>Main page</title><style>table, td, tr {border: 1px solid black; } td, tr { padding: 10px; } </style></head><body><h1>Welcome to the PracticeFMS Web Interface</h1><p/><h2>Current Robot Status:</h2></p>";
-                        response += "<p>";
+                        string response = "<html><head><title>Main - PracticeFMS Web Interface</title><style>table, td, tr {border: 1px solid black; } td, tr { padding: 10px; } h1, h2 { text-align: center; text-align: -webkit-center; margin: auto}	.left {float: left; width: 45%; text-align: center; text-align: -webkit-center; } .right {float: right; width: 45%; text-align: center; text-align: -webkit-center; } .redAlliance {background-color: #ff4450} .blueAlliance {background-color: #4450ff} .red {background-color: #ff003a6b}	.green {background-color: #4caf5063} @media screen and (max-width: 950px) {	.left, .main, .right {  width: 100%; margin-bottom: 50px; } } </style></head><body><h1 style=\"font-size: 3vw; max-width: 75%;\">Welcome to the PracticeFMS Web Interface</h1><br/><h2 style=\"font-size: 2.5vw; max-width: 50%;\">Current Robot Status:</h2><br/><div><div class=\"left\">";
                         foreach (DriverStation ds in redAlliance)
                         {
-                            response += ds.toHTMLTable();
+                            if (ds != null)
+                                response += ds.toHTMLTable();
                         }
-                        response += "</p><p>";
+                        response += "</div><div class=\"right\">";
                         foreach (DriverStation ds in blueAlliance)
                         {
-                            response += ds.toHTMLTable();
+                            if (ds != null)
+                                response += ds.toHTMLTable();
                         }
-                        response += "</p><p><a href=''>Refresh Data</a></body></html>";
+                        response += "</div><p style=\"float: none; text-align: -webkit-center;\"><a href=''>Refresh Data</a></p></body></html>";
                         byte[] buffer = System.Text.Encoding.UTF8.GetBytes(response);
                         context.Response.ContentLength64 = buffer.LongLength;
                         context.Response.OutputStream.Write(buffer, 0, buffer.Length);
