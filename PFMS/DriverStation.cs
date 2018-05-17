@@ -131,7 +131,7 @@ namespace PFMS
 
         public string toJSON()
         {
-            return "{ \"TeamNumber\":" + TeamNumber + ", \"AllianceColor\": \"" + (isRedAlliance() ? "Red" : "Blue") + "\", \"AllianceStationID\":" + stationId +", \"RobotIP\":\"" + robotIp.ToString() + "\", \"RadioIP\":\"" + radioIp.ToString() + "\", \"DriverStationIP\":\"" + (driverStationIp != null ? driverStationIp.ToString() : "Unregistered") + "\", \"IsDriverStationConnected\":" + isDSConnected.ToString().ToLower() + ", \"IsRoboRioConnected\":" + isRoboRioConnected.ToString().ToLower() + ", \"IsRobotRadioConnected\":" + isRobotRadioConnected.ToString().ToLower() + " }"; //TODO Add more to this 
+            return "{ \"TeamNumber\":" + TeamNumber + ", \"AllianceColor\": \"" + (isRedAlliance() ? "Red" : "Blue") + "\", \"AllianceStationID\":" + stationId +", \"RobotIP\":\"" + robotIp.ToString() + "\", \"RadioIP\":\"" + radioIp.ToString() + "\", \"DriverStationIP\":\"" + (driverStationIp != null ? driverStationIp.ToString() : "Unregistered") + "\", \"IsDriverStationConnected\":" + isDSConnected.ToString().ToLower() + ", \"IsRoboRioConnected\":" + isRoboRioConnected.ToString().ToLower() + ", \"IsRobotRadioConnected\":" + isRobotRadioConnected.ToString().ToLower() + " \"EStop\":" + estop + "}";
         }
 
         public bool isRedAlliance() { return (allianceStation == AllianceStations.RED1 || allianceStation == AllianceStations.RED2 || allianceStation == AllianceStations.RED3); }
