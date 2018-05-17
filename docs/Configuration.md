@@ -25,12 +25,12 @@ The number of robots on the red alliance.
 The number of robots on the blue alliance.
   
 # Default Config
->AutonomousTime:15
-TeleoperatedTime:135
-CountdownTime:3
-PauseTime:3
-GameStringOverride:-1
-RedAllianceCount:3
-BlueAllianceCount:3 
+>AutonomousTime:15\
+TeleoperatedTime:135\
+CountdownTime:3\
+PauseTime:3\
+GameStringOverride:-1\
+RedAllianceCount:3\
+BlueAllianceCount:3
 
 [Return Home](index.md)

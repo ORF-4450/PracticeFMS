@@ -5,8 +5,8 @@
 * A router that can be configured and can broadcast in the 5Ghz range.
 
 ## Additional Materials Required (For using PFMS)
-* At least one FRC Driver Station. (Up to 6)
-* At least one FRC Robot with the 2018 FRC Control System. (Up to 6)
+* At least one FRC Driver Station.
+* At least one FRC Robot with the 2018 FRC Control System.
 
 ## Optional Extra Materials
 * An additional computer for programming robot radios.
@@ -39,7 +39,7 @@ Start the PracticeFMS program on the server computer.
 When prompted, enter the team number for each alliance station, or leave it blank if there is no team there.
 
 ## Step 3: Connect Driver Stations.
-Make sure every Driver Station is connected to the network, and press enter when prompted to start connecting Driver Stations. This process will run until all Driver Stations are connected with robots. You can cancel this process by closing the program.
+Press enter when prompted to start connecting Driver Stations. This process will run until all Driver Stations and robots are connected to the network. You can cancel this process by closing the program.
 
 ## Step 4: Start the Match
 When prompted, press Enter to start a match countdown and to trigger sending the Game Specific String to the Driver Stations. The match will then run like normal, with the defaults of a 3-second countdown, followed by a 15 second Autonomous period, followed by a 3-second pause, followed by 135 seconds of Teleoperated period.
