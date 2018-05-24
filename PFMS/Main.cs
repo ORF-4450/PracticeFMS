@@ -496,14 +496,18 @@ namespace PFMS
                         string responseJSON = "{ \"Version\":\"" + version + "\", \"CurrentGamePhase\":\"" + currentGamePhase.ToString() + "\", \"TimeLeftInPhase\":" + TimeLeftInPhase + ", \"RedAllianceGameString\":\"" + redGameString + "\", \"BlueAllianceGameString\":\"" + blueGameString + "\", \"RedAlliance\": [";
                         if (redAlliance != null)
                         {
-                            for (int i = 0; i < redAlliance.Length - 1 && redAlliance[i] != null; i++) responseJSON += redAlliance[i].toJSON() + ",";
-                            if (redAlliance.Length > 0 && redAlliance[redAlliance.Length - 1] != null) responseJSON += redAlliance[redAlliance.Length - 1].toJSON();
+                            List<DriverStation> nonZeroDSs = new List<DriverStation>();
+                            foreach (DriverStation ds in redAlliance) { if (ds != null) if (ds.TeamNumber != 0) nonZeroDSs.Add(ds); };
+                            for (int i = 0; i < (nonZeroDSs.Count - 1); i++) responseJSON += nonZeroDSs[i].toJSON() + ",";
+                            if (nonZeroDSs.Count > 0 && nonZeroDSs[nonZeroDSs.Count - 1] != null) responseJSON += nonZeroDSs[nonZeroDSs.Count - 1].toJSON();
                         }
                         responseJSON += "], \"BlueAlliance\": [";
                         if (blueAlliance != null)
                         {
-                            for (int i = 0; i < blueAlliance.Length - 1 && blueAlliance[i] != null; i++) responseJSON += blueAlliance[i].toJSON() + ",";
-                            if (blueAlliance.Length > 0 && blueAlliance[blueAlliance.Length - 1] != null) responseJSON += blueAlliance[blueAlliance.Length - 1].toJSON();
+                            List<DriverStation> nonZeroDSs = new List<DriverStation>();
+                            foreach (DriverStation ds in blueAlliance) { if (ds != null) if (ds.TeamNumber != 0) nonZeroDSs.Add(ds); };
+                            for (int i = 0; i < (nonZeroDSs.Count - 1); i++) responseJSON += nonZeroDSs[i].toJSON() + ",";
+                            if (nonZeroDSs.Count > 0 && nonZeroDSs[nonZeroDSs.Count - 1] != null) responseJSON += nonZeroDSs[nonZeroDSs.Count - 1].toJSON();
                         }
                         responseJSON += "] }";
                         byte[] bufferJSON = System.Text.Encoding.UTF8.GetBytes(responseJSON);
