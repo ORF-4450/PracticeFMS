@@ -5,7 +5,7 @@ This is an unofficial, match play only, FIRST Robotics Competition Field Managem
 ## Features
 - Easy Setup. (No $20,000 equipment roadcase, just a computer, router, and other optional materials)
 - Not Expensive. (Just use a $60 router and one regular computer as the server.)
-- Easily Configurable. (10 minute autonomous? Why not!);
+- Easily Configurable. (10 minute autonomous? Why not!)
 
 ## Documentation
 More information, including step by step instructions for setting all of this up, is available at
